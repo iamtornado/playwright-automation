@@ -12,3 +12,6 @@ wheels/
 .venv
 
 chromium-browser-data/
+chromium-browser-data_backup_*
+
+*.html
