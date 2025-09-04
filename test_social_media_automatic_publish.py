@@ -160,7 +160,8 @@ def test_example(browser_context, request):
             # 粘贴从mdnice复制的HTML内容
             page_wechat.keyboard.press("Control+V")
             # 等待60秒，确保编辑器中的图片正常转存到微信服务器
-            page_wechat.wait_for_timeout(60000)
+            page_wechat.wait_for_load_state("networkidle")
+            # page_wechat.wait_for_timeout(60000)
             
             # 设置文章标题
             page_wechat.get_by_role("textbox", name="请在这里输入标题").click()
@@ -717,7 +718,8 @@ def test_example(browser_context, request):
             except Exception as e:
                 print(f"⚠️  上传封面图时出错: {e}")
                 print("跳过封面图设置，继续执行...")
-
+                
+            page_bilibili.wait_for_timeout(5000)
             # page_bilibili.wait_for_load_state("networkidle")
             # 提交文章
             iframe.get_by_role("button", name="提交文章").click()

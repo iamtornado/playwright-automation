@@ -13,5 +13,15 @@ wheels/
 
 chromium-browser-data/
 chromium-browser-data_backup_*
+chrome-browser-data/
+chroome-browser-data_backup_*
+edge-browser-data/
+edge-browser-data_backup_*
+firefox-browser-data/
+firefox-browser-data_backup_*
+opera-browser-data/
+opera-browser-data_backup_*
+brave-browser-data/
+brave-browser-data_backup_*
 
 *.html
