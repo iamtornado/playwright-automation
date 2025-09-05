@@ -1,8 +1,13 @@
 import pytest
 import re
 import random
+import sys
+import os
 from playwright.sync_api import Page, expect
 # import pyperclip
+
+# 导入字数统计功能
+from simple_word_counter import validate_and_clean_text
 
 # 定义各平台的话题标签数量限制
 PLATFORM_TAG_LIMITS = {
@@ -80,6 +85,131 @@ def test_example(browser_context, request):
         cover_image = request.config.getoption("--cover-image")
         tags_str = request.config.getoption("--tags")
         
+        # 验证并清理summary文本长度
+        print("=" * 60)
+        print("📏 验证summary文本长度...")
+        validation_result = validate_and_clean_text(summary, max_length=120)
+        print(validation_result['message'])
+        
+        if not validation_result['success']:
+            print("\n❌ Summary文本过长，无法继续执行脚本！")
+            print("请修改summary参数，确保字符数不超过120个。")
+            print(f"当前summary: \"{validation_result['original_text']}\"")
+            print(f"原始长度: {validation_result['original_count']}字符")
+            print(f"清理后长度: {validation_result['cleaned_count']}字符")
+            print("\n建议解决方案：")
+            print("1. 缩短summary文本内容")
+            print("2. 移除不必要的词汇和标点符号")
+            print("3. 使用更简洁的表达方式")
+            sys.exit(1)
+        
+        # 如果清理后的文本更短，使用清理后的版本
+        if validation_result['cleaned_count'] < validation_result['original_count']:
+            summary = validation_result['cleaned_text']
+            print(f"✅ 已自动使用清理后的summary（减少了{validation_result['original_count'] - validation_result['cleaned_count']}个字符）")
+        
+        print("=" * 60)
+        
+        # 下载钉钉文档为本地markdown文件
+        page_dingtalk_DreamAI_KB = browser_context.new_page()
+        page_dingtalk_DreamAI_KB.goto("https://alidocs.dingtalk.com/i/nodes/Amq4vjg890AlRbA6Td9ZvlpDJ3kdP0wQ")
+        # 登录钉钉文档
+        # 检查是否需要登录
+        try:
+            login_button = page_dingtalk_DreamAI_KB.locator("#wiki-doc-iframe").content_frame.get_by_role("button", name="登录钉钉文档")
+            if login_button.is_visible(timeout=5000):
+                print("检测到需要登录钉钉文档，正在执行登录...")
+                login_button.click()
+                page_dingtalk_DreamAI_KB.locator(".module-qrcode-op-line > .base-comp-check-box > .base-comp-check-box-rememberme-box").first.click()
+                page_dingtalk_DreamAI_KB.get_by_text("邓龙").click()
+                print("登录钉钉文档完成")
+            else:
+                print("已登录钉钉文档，跳过登录步骤")
+        except Exception as e:
+            print(f"登录检查过程中出现异常: {e}")
+            print("继续执行后续步骤...")
+        # page.goto("https://alidocs.dingtalk.com/i/nodes/Amq4vjg890AlRbA6Td9ZvlpDJ3kdP0wQ?code=1d328c3fafd03cf4bc3c319882ced3d4&authCode=1d328c3fafd03cf4bc3c319882ced3d4")
+        # page_dingtalk_DreamAI_KB.get_by_role("textbox", name="快速搜索文档标题").click()
+        # page_dingtalk_DreamAI_KB.get_by_role("textbox", name="快速搜索文档标题").fill("craXcel，一个可以移除Excel密码的开源工具")
+        page_dingtalk_DreamAI_KB.get_by_test_id("cn-dropdown-trigger").locator("path").click()
+        page_dingtalk_DreamAI_KB.get_by_role("textbox", name="搜索（Ctrl + J）").click()
+        page_dingtalk_DreamAI_KB.get_by_role("textbox", name="搜索（Ctrl + J）").fill("craXcel，一个可以移除Excel密码的开源工具")
+        with page_dingtalk_DreamAI_KB.expect_popup() as page1_info:
+            page_dingtalk_DreamAI_KB.get_by_role("heading", name="craXcel，一个可以移除Excel密码的开源工具").locator("red").click()
+        page_dingtalk_doc = page1_info.value
+        page_dingtalk_doc.locator("#wiki-doc-iframe").content_frame.get_by_test_id("doc-header-more-button").click()
+        # 下载钉钉文档为本地markdown文件
+        page_dingtalk_doc.locator("#wiki-doc-iframe").content_frame.get_by_text("下载到本地").first.click()
+        with page_dingtalk_doc.expect_download() as download_info:
+            page_dingtalk_doc.locator("#wiki-doc-iframe").content_frame.get_by_text("Markdown(.md)").click()
+        download = download_info.value
+        # Wait for the download process to complete and save the downloaded file somewhere
+        # 获取下载文件的建议文件名
+        suggested_filename = download.suggested_filename
+        # 构建保存路径
+        save_path = os.path.join("D:/tornadofiles/scripts_脚本/github_projects/playwright-automation/markdown_files", suggested_filename)
+        # 保存文件
+        download.save_as(save_path)
+        
+        # 获取下载文件的绝对路径和文件名
+        downloaded_file_path = os.path.abspath(save_path)
+        downloaded_filename = os.path.basename(downloaded_file_path)
+        
+        print(f"📁 下载文件名: {downloaded_filename}")
+        print(f"📂 下载文件绝对路径: {downloaded_file_path}")
+
+        # 将gemini生成的文章封面图上传到相应钉钉文档的第一行中
+        try:
+            # 1. 定位到文档开头
+            iframe_content = page_dingtalk_doc.locator("#wiki-doc-iframe").content_frame
+            first_paragraph = iframe_content.locator(".sc-psedN").first
+            
+            # 确保元素可见并点击获得焦点
+            first_paragraph.wait_for(state="visible", timeout=10000)
+            first_paragraph.click()
+            
+            # 等待焦点设置完成
+            page_dingtalk_doc.wait_for_timeout(1000)
+            
+            # 2. 尝试移动到文档开头（修复组合键问题）
+            try:
+                first_paragraph.press("Control+Home")
+                print("✅ 成功移动到文档开头")
+            except Exception as e:
+                print(f"⚠️  组合键失败，继续执行: {e}")
+            
+            # 3. 点击插入按钮
+            iframe_content.get_by_test_id("overlay-bi-toolbar-insertMore").get_by_text("插入").click()
+            # iframe_content.get_by_text("图片上传本地图片").click()
+            
+            # 4. 使用文件选择器处理方式上传图片（参考51CTO的方法）
+            with page_dingtalk_doc.expect_file_chooser() as fc_info_dingtalk:
+                # 触发文件选择器的元素可能需要调整，这里可能需要点击一个上传按钮或输入区域
+                # 由于当前定位到的是textbox，我们需要找到实际的文件输入触发元素
+                try:
+                    # 尝试点击可能的文件上传触发元素
+                    iframe_content.get_by_text("图片上传本地图片").click()
+                except:
+                    try:
+                        # 如果没有"点击上传"，尝试其他可能的触发元素
+                        iframe_content.locator("input[type='file']").first.click()
+                    except:
+                        # 如果都找不到，尝试点击上传区域
+                        iframe_content.locator(".upload-area, .file-upload, [data-upload]").first.click()
+            
+            # 获取文件选择器并设置文件
+            file_chooser_dingtalk = fc_info_dingtalk.value
+            file_chooser_dingtalk.set_files(cover_image)
+            
+            # 等待封面图上传完成
+            page_dingtalk_doc.wait_for_timeout(3000)
+            page_dingtalk_doc.wait_for_load_state("networkidle")
+            print("✅ 图片上传成功")
+            
+        except Exception as e:
+            print(f"❌ 图片上传失败: {e}")
+            print("跳过图片上传，继续执行后续步骤...")
+
         # 解析话题标签
         all_tags = [tag.strip() for tag in tags_str.split(',') if tag.strip()]
         print(f"📝 所有话题标签: {all_tags}")
@@ -797,14 +927,16 @@ if __name__ == "__main__":
     print("     --platforms 'wechat,zhihu'")
     print()
     print("参数说明：")
-    print("--title          文章标题（必填，最多100字）")
-    print("--author         作者名称（必填）")
-    print("--summary        文章摘要（必填，用于转发卡片展示）")
-    print("--url            原文链接（必填，用于引用来源）")
-    print("--markdown-file  Markdown文件路径（必填，支持.md格式）")
-    print("--user-data-dir  浏览器用户数据目录（必填，用于保存登录状态）")
-    print("--platforms      指定要发布到的平台（可选，默认发布到所有平台）")
-    print("--cover-image    文章封面图片路径（必填，建议JPG/PNG格式）")
+    print("--title              文章标题（必填，最多100字）")
+    print("--author             作者名称（必填）")
+    print("--summary            文章摘要（必填，用于转发卡片展示，最多120字符）")
+    print("--url                原文链接（必填，用于引用来源）")
+    print("--markdown-file      Markdown文件路径（必填，支持.md格式）")
+    print("--user-data-dir      浏览器用户数据目录（必填，用于保存登录状态）")
+    print("--platforms          指定要发布到的平台（可选，默认发布到所有平台）")
+    print("--cover-image        文章封面图片路径（必填，建议JPG/PNG格式）")
+    print("--tags               话题标签（可选，用逗号分隔，如：AI,人工智能,大模型）")
+    print("--backup-browser-data 是否备份浏览器数据（可选，true/false，默认true）")
     print()
     print("平台选择参数 --platforms 的使用方法：")
     print("--platforms all                    # 发布到所有平台（默认）")
@@ -830,6 +962,12 @@ if __name__ == "__main__":
     print("--cover-image my_cover.png        # 使用自定义封面图片")
     print("--cover-image /path/to/image.jpg  # 使用绝对路径的封面图片")
     print()
+    print("浏览器数据备份参数 --backup-browser-data 的使用方法：")
+    print("--backup-browser-data true        # 执行备份（默认，推荐）")
+    print("--backup-browser-data false       # 跳过备份（快速测试时使用）")
+    print("--backup-browser-data 1           # 执行备份（true的别名）")
+    print("--backup-browser-data 0           # 跳过备份（false的别名）")
+    print()
     print("环境要求：")
     print("- Python 3.7+")
     print("- Playwright 已安装并配置")
@@ -843,6 +981,9 @@ if __name__ == "__main__":
     print("4. 脚本会自动保存为草稿，需要手动发布")
     print("5. 建议在测试环境中先验证功能")
     print("6. 视频录制和截图功能会生成大量文件，注意磁盘空间")
+    print("7. summary参数会自动验证长度，超过120字符时会尝试优化")
+    print("8. 浏览器数据备份默认开启，可通过 --backup-browser-data=false 跳过")
+    print("9. 跳过备份可能导致浏览器数据丢失，仅在快速测试时使用")
     print()
     print("示例运行命令：")
     print("# 发布到所有平台")
@@ -864,7 +1005,18 @@ if __name__ == "__main__":
     print("  --cover-image './test_cover.jpg' \\")
     print("  --platforms 'zhihu,csdn'")
     print()
+    print("# 快速测试（跳过备份）")
+    print("pytest -s --headed ./test_social_media_automatic_publish.py \\")
+    print("  --title '快速测试' \\")
+    print("  --author '测试用户' \\")
+    print("  --summary '快速测试摘要' \\")
+    print("  --url 'https://example.com' \\")
+    print("  --markdown-file './test.md' \\")
+    print("  --cover-image './cover.jpg' \\")
+    print("  --platforms 'zhihu' \\")
+    print("  --backup-browser-data false")
+    print()
     print("作者：tornadoami")
     print("版本：1.0.0")
-    print("更新日期：2024年")
+    print("更新日期：2025年")
     print("=" * 80)

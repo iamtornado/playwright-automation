@@ -31,6 +31,10 @@ def pytest_addoption(parser):
     parser.addoption("--tags", type=str, 
                      default='AI,人工智能,大模型,LLM,机器学习,深度学习,开源,技术分享,自动化,ollama',
                      help='话题标签，用逗号分隔，如：AI,人工智能,大模型,LLM')
+    # 新增浏览器数据备份控制参数
+    parser.addoption("--backup-browser-data", type=str, 
+                     default='true',
+                     help='是否备份浏览器数据，可选值：true/false，默认为true')
 
 def cleanup_old_backups(max_backups=3):
     """清理旧的备份目录，只保留最近的指定数量的备份"""
@@ -84,12 +88,19 @@ def backup_browser_data():
         return None
 
 @pytest.fixture(scope="session", autouse=True)
-def backup_browser_data_fixture():
+def backup_browser_data_fixture(request):
     """自动执行的备份fixture"""
-    print("🔄 开始备份浏览器数据目录...")
-    backup_path = backup_browser_data()
-    yield backup_path
-    print(f"📦 浏览器数据备份完成: {backup_path}")
+    # 获取备份控制参数
+    backup_enabled = request.config.getoption("--backup-browser-data").lower() in ['true', '1', 'yes', 'on']
+    
+    if backup_enabled:
+        print("🔄 开始备份浏览器数据目录...")
+        backup_path = backup_browser_data()
+        yield backup_path
+        print(f"📦 浏览器数据备份完成: {backup_path}")
+    else:
+        print("⏭️  跳过浏览器数据备份（用户设置 --backup-browser-data=false）")
+        yield None
 
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args, playwright):
