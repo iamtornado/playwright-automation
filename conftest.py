@@ -30,6 +30,9 @@ def pytest_addoption(parser):
     parser.addoption("--backup-browser-data", type=str, 
                      default='true',
                      help='是否备份浏览器数据，可选值：true/false，默认为true')
+    # 新增短标题参数
+    parser.addoption("--short-title", type=str, 
+                     help='短标题（可选，用于图文平台，如不指定则自动生成）')
 
 def cleanup_old_backups(max_backups=3):
     """清理旧的备份目录，只保留最近的指定数量的备份"""

@@ -610,6 +610,7 @@ def test_example(browser_context, request):
         platforms = request.config.getoption("--platforms")
         cover_image = request.config.getoption("--cover-image")
         tags_str = request.config.getoption("--tags")
+        short_title = request.config.getoption("--short-title")
         
         # 验证必需参数
         if not title:
@@ -649,6 +650,11 @@ def test_example(browser_context, request):
             print(f"🖼️  使用指定的封面图: {cover_image}")
         else:
             print("🖼️  封面图: 将使用Gemini自动生成")
+            
+        if short_title:
+            print(f"📝 使用指定的短标题: {short_title}")
+        else:
+            print("📝 短标题: 将自动生成")
         print("=" * 60)
         
         # 标记是否需要使用豆包AI自动生成summary（在markdown文件下载后执行）
@@ -846,38 +852,49 @@ def test_example(browser_context, request):
         print(f"📝 当前标题: {title}")
         print(f"📊 标题长度: {title_length}字符")
         
-        if title_length > 20:
-            print("⚠️  标题长度超过20字符，需要生成短标题")
-            print("🤖 正在使用豆包AI生成短标题...")
+        # 如果用户提供了短标题参数，直接使用
+        if short_title:
+            short_title_length = len(short_title)
+            print(f"✅ 使用用户指定的短标题: {short_title}")
+            print(f"📊 短标题长度: {short_title_length}字符")
             
-            try:
-                short_title = generate_newspic_title_with_doubao(browser_context, markdown_file)
-                if short_title:
-                    short_title_length = len(short_title)
-                    print(f"✅ 豆包AI生成的短标题: {short_title}")
-                    print(f"📊 短标题长度: {short_title_length}字符")
-                    
-                    # 验证生成的短标题长度
-                    if short_title_length <= 20:
-                        print("✅ 短标题长度符合要求，将使用生成的短标题")
-                        # 这里可以选择是否替换原标题，或者保存为单独的短标题变量
-                        # title = short_title  # 如果需要替换原标题，取消注释这行
-                    else:
-                        print(f"⚠️  生成的短标题仍然过长({short_title_length}字符)")
-                        print("设置默认短标题")
-                        short_title = "查询远程计算机管理员组成员的脚本"
-                        # sys.exit(1)
-                else:
-                    print("❌ 豆包AI生成短标题失败，将退出脚本")
-                    sys.exit(1)
-            except Exception as e:
-                print(f"❌ 豆包AI生成短标题时出错: {e}")
-                print("将退出脚本")
-                sys.exit(1)
+            # 验证用户提供的短标题长度
+            if short_title_length > 20:
+                print(f"⚠️  用户指定的短标题过长({short_title_length}字符)，建议不超过20字符")
+                print("将使用用户指定的短标题，但可能在某些平台显示不完整")
         else:
-            print("✅ 标题长度符合要求，无需生成短标题")
-            short_title = title
-            print(f"✅ 标题长度符合要求，已将title赋值给short_title，将使用short_title: {short_title}")
+            # 如果title长度超过20字符，使用豆包AI生成短标题
+            if title_length > 20:
+                print("⚠️  标题长度超过20字符，需要生成短标题")
+                print("🤖 正在使用豆包AI生成短标题...")
+                
+                try:
+                    short_title = generate_newspic_title_with_doubao(browser_context, markdown_file)
+                    if short_title:
+                        short_title_length = len(short_title)
+                        print(f"✅ 豆包AI生成的短标题: {short_title}")
+                        print(f"📊 短标题长度: {short_title_length}字符")
+                        
+                        # 验证生成的短标题长度
+                        if short_title_length <= 20:
+                            print("✅ 短标题长度符合要求，将使用生成的短标题")
+                        else:
+                            print(f"⚠️  生成的短标题仍然过长({short_title_length}字符)")
+                            print("设置默认短标题")
+                            short_title = "查询远程计算机管理员组成员的脚本"
+                    else:
+                        print("❌ 豆包AI生成短标题失败，将使用原标题")
+                        short_title = title
+                        print(f"✅ 将使用原标题作为短标题: {short_title}")
+                except Exception as e:
+                    print(f"❌ 豆包AI生成短标题时出错: {e}")
+                    print("将使用原标题作为短标题")
+                    short_title = title
+                    print(f"✅ 将使用原标题作为短标题: {short_title}")
+            else:
+                print("✅ 标题长度符合要求，无需生成短标题")
+                short_title = title
+                print(f"✅ 标题长度符合要求，已将title赋值给short_title，将使用short_title: {short_title}")
         
         print("=" * 60)
 
@@ -2133,6 +2150,7 @@ if __name__ == "__main__":
     print("     --url '原文链接' \\")
     print("     --markdown-file '/path/to/article.md' \\")
     print("     --cover-image 'cover.jpg' \\")
+    print("     --short-title '短标题' \\")
     print("     --platforms 'wechat,zhihu'")
     print()
     print("参数说明：")
@@ -2147,6 +2165,7 @@ if __name__ == "__main__":
     print("--cover-image        文章封面图片路径（可选，如不指定则使用Gemini自动生成）")
     print("--tags               话题标签（可选，用逗号分隔，如：AI,人工智能,大模型）")
     print("                     特殊值：'auto'、'doubao'、'豆包'、'ai' - 使用豆包AI自动生成")
+    print("--short-title        短标题（可选，用于图文平台，如不指定则自动生成）")
     print("--backup-browser-data 是否备份浏览器数据（可选，true/false，默认true）")
     print()
     print("豆包AI自动生成summary的使用方法：")
@@ -2216,7 +2235,8 @@ if __name__ == "__main__":
     print("  --summary '本文介绍AutoGPT的核心功能和使用方法' \\")
     print("  --url 'https://example.com/article' \\")
     print("  --markdown-file './article.md' \\")
-    print("  --cover-image './cover.jpg'")
+    print("  --cover-image './cover.jpg' \\")
+    print("  --short-title 'AutoGPT智能代理'")
     print()
     print("# 只发布到特定平台")
     print("pytest -s --headed ./test_social_media_automatic_publish.py \\")
@@ -2226,6 +2246,7 @@ if __name__ == "__main__":
     print("  --url 'https://test.com' \\")
     print("  --markdown-file './test.md' \\")
     print("  --cover-image './test_cover.jpg' \\")
+    print("  --short-title '测试短标题' \\")
     print("  --platforms 'zhihu,csdn'")
     print()
     print("# 快速测试（跳过备份）")
@@ -2236,6 +2257,7 @@ if __name__ == "__main__":
     print("  --url 'https://example.com' \\")
     print("  --markdown-file './test.md' \\")
     print("  --cover-image './cover.jpg' \\")
+    print("  --short-title '快速测试' \\")
     print("  --platforms 'zhihu' \\")
     print("  --backup-browser-data false")
     print()
@@ -2255,6 +2277,7 @@ if __name__ == "__main__":
     print("--cover-image        文章封面图片路径（可选，如不指定则使用Gemini自动生成）")
     print("--tags               话题标签（可选，用逗号分隔，如：AI,人工智能,大模型）")
     print("                     特殊值：'auto'、'doubao'、'豆包'、'ai' - 使用豆包AI自动生成")
+    print("--short-title        短标题（可选，用于图文平台，如不指定则自动生成）")
     print("--backup-browser-data 是否备份浏览器数据（可选，true/false，默认true）")
     print()
     print("豆包AI自动生成summary的使用方法：")
