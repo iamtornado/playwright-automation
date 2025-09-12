@@ -1,0 +1,381 @@
+# -*- coding: utf-8 -*-
+"""
+豆包AI图片生成模块
+提供完整的豆包AI图片生成功能，包括提示词生成和图片下载
+"""
+
+import os
+import time
+import pyperclip
+from typing import List, Optional, Tuple
+from playwright.sync_api import Page, BrowserContext
+
+
+class DoubaoAIImageGenerator:
+    """豆包AI图片生成器"""
+    
+    def __init__(self, page: Page, context: BrowserContext):
+        """
+        初始化豆包AI图片生成器
+        
+        Args:
+            page: Playwright页面对象
+            context: 浏览器上下文对象
+        """
+        self.page = page
+        self.context = context
+        self.downloads_dir = os.path.join(os.getcwd(), "test-results", "doubao_images")
+        os.makedirs(self.downloads_dir, exist_ok=True)
+    
+    def generate_prompt_from_markdown(self, markdown_file: str) -> Optional[str]:
+        """
+        从Markdown文件生成文生图提示词
+        
+        Args:
+            markdown_file: Markdown文件路径
+            
+        Returns:
+            生成的提示词，失败时返回None
+        """
+        try:
+            print("🤖 开始生成文生图提示词...")
+            
+            # 上传Markdown文件
+            self._upload_markdown_file(markdown_file)
+            
+            # 发送提示词生成请求
+            prompt_text = self._get_prompt_generation_text()
+            self._send_prompt_request(prompt_text)
+            
+            # 获取AI回复的提示词
+            prompt_result = self._get_ai_response()
+            
+            if prompt_result:
+                # 保存提示词到文件
+                self._save_prompt_to_file(prompt_result, markdown_file)
+                print(f"✅ 提示词生成成功: {prompt_result[:100]}...")
+                return prompt_result
+            else:
+                print("❌ 提示词生成失败")
+                return None
+                
+        except Exception as e:
+            print(f"❌ 生成提示词时出错: {e}")
+            return None
+    
+    def generate_images_with_prompt(self, prompt: str, aspect_ratio: str = "16:9") -> List[str]:
+        """
+        使用提示词生成图片
+        
+        Args:
+            prompt: 文生图提示词
+            aspect_ratio: 图片比例，默认为"16:9"
+            
+        Returns:
+            生成的图片文件路径列表
+        """
+        try:
+            print("🎨 开始生成图片...")
+            
+            # 切换到图片生成技能
+            self._switch_to_image_generation_skill()
+
+            # 在聊天输入框中输入提示词，不发送
+            self._fill_prompt_only(prompt)
+            
+            # 设置图片比例
+            self._set_image_aspect_ratio(aspect_ratio)
+
+            # 发送图片生成请求
+            self._send_image_generation_request(prompt)
+            
+            # 等待图片生成完成
+            self._wait_for_image_generation()
+            
+            # 下载生成的图片
+            downloaded_files = self._download_generated_images()
+            
+            if downloaded_files:
+                print(f"✅ 图片生成成功，共下载 {len(downloaded_files)} 张图片")
+                return downloaded_files
+            else:
+                print("❌ 图片生成失败")
+                return []
+                
+        except Exception as e:
+            print(f"❌ 生成图片时出错: {e}")
+            return []
+    
+    def generate_images_from_markdown(self, markdown_file: str, aspect_ratio: str = "16:9") -> Tuple[Optional[str], List[str]]:
+        """
+        从Markdown文件生成图片（完整流程）
+        
+        Args:
+            markdown_file: Markdown文件路径
+            aspect_ratio: 图片比例，默认为"16:9"
+            
+        Returns:
+            (提示词, 图片文件路径列表)
+        """
+        try:
+            print("🚀 开始完整的图片生成流程...")
+            
+            # 步骤1：生成提示词
+            prompt = self.generate_prompt_from_markdown(markdown_file)
+            if not prompt:
+                return None, []
+            
+            # 步骤2：生成图片
+            image_files = self.generate_images_with_prompt(prompt, aspect_ratio)
+            
+            return prompt, image_files
+            
+        except Exception as e:
+            print(f"❌ 完整流程执行失败: {e}")
+            return None, []
+    
+    def _upload_markdown_file(self, markdown_file: str) -> None:
+        """上传Markdown文件"""
+        print("📤 上传Markdown文件...")
+        
+        # 点击文件上传按钮
+        self.page.get_by_test_id("upload_file_button").click()
+        self.page.wait_for_timeout(1000)
+        
+        # 选择上传文件选项并上传文件
+        with self.page.expect_file_chooser() as page_upload_file:
+            self.page.get_by_text("上传文件或图片").click()
+        page_upload_file = page_upload_file.value
+        page_upload_file.set_files(markdown_file)
+        self.page.wait_for_timeout(1000)
+        
+        print("✅ Markdown文件上传成功")
+    
+    def _get_prompt_generation_text(self) -> str:
+        """获取提示词生成请求文本"""
+        return """请仔细阅读我提供的markdown文件，我计划将文章发布到微信公众号上，我需要文章封面图，请根据markdown文件内容，生成一段合适的文生图提示词。
+注意：
+1.提示词的语言为英文。
+2.提示词中需要包含这个反向提示词：no Chinese character
+3.你的回答只需返回提示词，不要返回任何其他内容。"""
+    
+    def _send_prompt_request(self, prompt_text: str) -> None:
+        """发送提示词生成请求"""
+        print("💬 发送提示词生成请求...")
+        
+        # 点击聊天输入框
+        self.page.get_by_test_id("chat_input_input").click()
+        self.page.wait_for_timeout(500)
+        
+        # 输入提示词
+        self.page.get_by_test_id("chat_input_input").fill(prompt_text)
+        self.page.wait_for_timeout(1000)
+        
+        # 发送消息
+        self.page.get_by_test_id("chat_input_send_button").click()
+        print("✅ 提示词生成请求发送成功")
+        
+        # 等待AI回复
+        print("⏳ 等待AI回复...")
+        self.page.wait_for_timeout(10000)
+    
+    def _fill_prompt_only(self, prompt_text: str) -> None:
+        """仅在聊天输入框中输入提示词，不发送"""
+        print("💬 在聊天输入框中输入提示词...")
+        
+        # 点击聊天输入框
+        self.page.get_by_test_id("chat_input_input").click()
+        self.page.wait_for_timeout(500)
+        
+        # 输入提示词
+        self.page.get_by_test_id("chat_input_input").fill(prompt_text)
+        self.page.wait_for_timeout(1000)
+        
+        print("✅ 提示词输入完成")
+
+    def _get_ai_response(self) -> Optional[str]:
+        """获取AI回复内容"""
+        try:
+            print("📋 获取AI回复内容...")
+            
+            # 点击复制按钮
+            copy_button = self.page.get_by_test_id("message_action_copy")
+            if copy_button.count() > 0:
+                copy_button.click()
+                self.page.wait_for_timeout(1000)
+                
+                # 从剪贴板读取内容
+                prompt_result = pyperclip.paste().strip()
+                
+                if prompt_result:
+                    print("✅ AI回复获取成功")
+                    return prompt_result
+                else:
+                    print("⚠️  剪贴板内容为空")
+                    return None
+            else:
+                print("⚠️  未找到复制按钮")
+                return None
+                
+        except Exception as e:
+            print(f"⚠️  获取AI回复时出错: {e}")
+            return None
+    
+    def _save_prompt_to_file(self, prompt: str, markdown_file: str) -> None:
+        """保存提示词到文件"""
+        try:
+            prompt_file = os.path.join(
+                "test-results", 
+                f"doubao_prompt_{os.path.splitext(os.path.basename(markdown_file))[0]}.txt"
+            )
+            os.makedirs("test-results", exist_ok=True)
+            
+            with open(prompt_file, 'w', encoding='utf-8') as f:
+                f.write(prompt)
+            
+            print(f"📁 提示词已保存到: {prompt_file}")
+            
+        except Exception as e:
+            print(f"⚠️  保存提示词时出错: {e}")
+    
+    def _switch_to_image_generation_skill(self) -> None:
+        """切换到图片生成技能"""
+        print("🎯 切换到图片生成技能...")
+        
+        # 点击技能按钮
+        self.page.get_by_test_id("chat-input-all-skill-button").click()
+        self.page.wait_for_timeout(1000)
+        
+        # 选择图片生成技能
+        self.page.get_by_role("dialog").get_by_test_id("skill_bar_button_3").click()
+        self.page.wait_for_timeout(1000)
+        
+        print("✅ 图片生成技能切换成功")
+    
+    def _set_image_aspect_ratio(self, aspect_ratio: str) -> None:
+        """设置图片比例"""
+        print(f"📐 设置图片比例为 {aspect_ratio}...")
+        
+        # 点击图片比例按钮
+        self.page.get_by_test_id("image-creation-chat-input-picture-ration-button").click()
+        self.page.wait_for_timeout(1000)
+        
+        # 选择比例
+        if aspect_ratio == "16:9":
+            self.page.get_by_text(":9 桌面壁纸，风景").click()
+        elif aspect_ratio == "1:1":
+            self.page.get_by_text(":1 社交媒体").click()
+        elif aspect_ratio == "4:3":
+            self.page.get_by_text(":3 传统照片").click()
+        else:
+            # 默认选择16:9
+            self.page.get_by_text(":9 桌面壁纸，风景").click()
+        
+        self.page.wait_for_timeout(1000)
+        print(f"✅ 图片比例 {aspect_ratio} 设置成功")
+    
+    def _send_image_generation_request(self, prompt: str) -> None:
+        """发送图片生成请求"""
+        print("🎨 发送图片生成请求...")
+        print("正在点击发送按钮")
+        # self.page.get_by_test_id("chat_input_input").locator("div").nth(1).click()
+        self.page.wait_for_timeout(500)
+        
+        # 输入提示词
+        # 这里也可以不用输入提示词，因为之前回答中已经包含了提示词，只需设置图片比例即可。
+        # self.page.get_by_test_id("chat_input_input").fill(prompt)
+        # self.page.wait_for_timeout(1000)
+        
+        # 发送请求
+        self.page.get_by_test_id("chat_input_send_button").click()
+        print("✅ 图片生成请求发送成功")
+    
+    def _wait_for_image_generation(self) -> None:
+        """等待图片生成完成"""
+        print("⏳ 等待图片生成完成...")
+        print("这可能需要几十秒时间，请耐心等待...")
+        print("等待30秒")
+        self.page.wait_for_timeout(30000)  # 等待30秒
+
+    def _download_generated_images(self) -> List[str]:
+        """下载生成的图片"""
+        print("📥 开始下载生成的图片...")
+        
+        try:
+            # 查找下载按钮
+            # 等待下载按钮出现，超时时间为1分钟
+            print("等待下载按钮出现，超时时间为1分钟")
+            self.page.get_by_test_id("message-list").get_by_role("button", name="下载").wait_for(state="visible", timeout=60000)
+            print("下载按钮出现")
+            download_buttons = self.page.get_by_test_id("message-list").get_by_role("button", name="下载")
+            
+            if download_buttons.count() == 0:
+                print("⚠️  未找到下载按钮")
+                return []
+            
+            print(f"✅ 找到 {download_buttons.count()} 个下载按钮")
+            
+            # 设置下载事件监听器
+            downloads = []
+            
+            def handle_download(download):
+                downloads.append(download)
+                print(f"📥 检测到下载: {download.suggested_filename}")
+            
+            self.page.on("download", handle_download)
+            
+            # 点击下载按钮
+            print("🖱️  点击下载按钮...")
+            download_buttons.first.click()
+            print("✅ 点击最终的下载按钮")
+            final_download_button = self.page.get_by_role("button", name="下载").nth(2)
+            final_download_button.click()
+            # 等待下载完成
+            print("⏳ 等待下载完成...")
+            self.page.wait_for_timeout(30000)  # 等待30秒
+            
+            # 处理下载的文件
+            downloaded_files = []
+            if downloads:
+                print(f"📊 检测到 {len(downloads)} 个下载文件")
+                
+                for i, download in enumerate(downloads):
+                    try:
+                        # 生成文件名
+                        timestamp = time.strftime("%Y%m%d_%H%M%S")
+                        original_name = download.suggested_filename or f"image_{i+1}.png"
+                        name, ext = os.path.splitext(original_name)
+                        filename = f"doubao_generated_image_{i+1}_{timestamp}{ext}"
+                        file_path = os.path.join(self.downloads_dir, filename)
+                        
+                        download.save_as(file_path)
+                        file_size = os.path.getsize(file_path)
+                        
+                        downloaded_files.append(file_path)
+                        print(f"✅ 图片 {i+1} 下载成功: {filename}")
+                        print(f"📊 文件大小: {file_size} 字节")
+                        
+                    except Exception as e:
+                        print(f"⚠️  处理下载文件 {i+1} 时出错: {e}")
+            else:
+                print("⚠️  未检测到任何下载文件")
+            
+            return downloaded_files
+            
+        except Exception as e:
+            print(f"⚠️  下载图片时出错: {e}")
+            return []
+
+
+def create_doubao_generator(page: Page, context: BrowserContext) -> DoubaoAIImageGenerator:
+    """
+    创建豆包AI图片生成器实例
+    
+    Args:
+        page: Playwright页面对象
+        context: 浏览器上下文对象
+        
+    Returns:
+        DoubaoAIImageGenerator实例
+    """
+    return DoubaoAIImageGenerator(page, context)

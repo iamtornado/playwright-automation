@@ -1,5 +1,7 @@
 # craXcel，一个可以移除Excel密码的开源工具
 
+![Gemini_Generated_Image_vw30lmvw30lmvw30.png](https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/jP2lRYj1WWbd6O8g/img/cf276fc7-5a6c-4fbb-b7f2-2c500aee5ca6.png)
+
 ![craXcel，一个可以移除Excel密码的开源工具封面图.png](https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/jP2lRYj1WWbd6O8g/img/ab4c2003-eee3-4cd1-8744-f495b2d74244.png)
 
 # 阅读原文

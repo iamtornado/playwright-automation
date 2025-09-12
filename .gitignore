@@ -11,6 +11,8 @@ wheels/
 # Virtual environments
 .venv
 
+browser_data
+
 chromium-browser-data/
 chromium-browser-data_backup_*
 chrome-browser-data/
@@ -23,5 +25,9 @@ opera-browser-data/
 opera-browser-data_backup_*
 brave-browser-data/
 brave-browser-data_backup_*
+
+markdown_files
+downloads
+generated_images
 
 *.html

@@ -6,18 +6,14 @@ from datetime import datetime
 
 def pytest_addoption(parser):
     parser.addoption("--title", type=str, 
-                     default='autogpt，一款可持续运行并自主执行任务的智能代理平台，帮助用户高效自动化各类工作流程',
-                     help='文章标题')
+                     help='文章标题（必填）')
     parser.addoption("--author", type=str, default='tornadoami', help='作者名称')
     parser.addoption("--summary", type=str, 
-                     default='本文介绍 AutoGPT，一款可自主执行任务的智能代理平台，含无缝集成等核心功能，附官网与 GitHub 地址。还详解安装：需先装 docker 等工具，Linux 用脚本安装及解决克隆、镜像拉取失败办法',
-                     help='文章摘要')
+                     help='文章摘要（可选，如不指定则使用豆包AI自动生成）')
     parser.addoption("--url", type=str, 
-                     default='https://alidocs.dingtalk.com/i/nodes/X6GRezwJlAMg6vMGskpZPGvD8dqbropQ?utm_scene=team_space',
-                     help='原文链接')
+                     help='原文链接（可选，如不指定则从钉钉文档自动获取）')
     parser.addoption("--markdown-file", type=str, 
-                     default='/home/ubuntu/autogpt，一款可持续运行并自主执行任务的智能代理平台，帮助用户高效自动化各类工作流程.md',
-                     help='Markdown文件路径')
+                     help='Markdown文件路径（可选，如不指定则从钉钉文档自动下载）')
     parser.addoption("--user-data-dir", type=str, 
                      default='D:/tornadofiles/scripts_脚本/github_projects/playwright-automation/chromium-browser-data',
                      help='浏览器用户数据目录')
@@ -25,11 +21,10 @@ def pytest_addoption(parser):
                      default='all',
                      help='指定要发布到的平台，用逗号分隔，如：wechat,zhihu,csdn,51cto,cnblogs 或 all 表示所有平台')
     parser.addoption("--cover-image", type=str, 
-                     default='cover.jpg',
-                     help='文章封面图片路径')
+                     help='文章封面图片路径（可选，如不指定则使用Gemini自动生成）')
     # 新增话题标签参数
     parser.addoption("--tags", type=str, 
-                     default='AI,人工智能,大模型,LLM,机器学习,深度学习,开源,技术分享,自动化,ollama',
+                     default='AI,人工智能,大模型,LLM,机器学习,深度学习,开源,技术分享,自动化,agent',
                      help='话题标签，用逗号分隔，如：AI,人工智能,大模型,LLM')
     # 新增浏览器数据备份控制参数
     parser.addoption("--backup-browser-data", type=str, 
