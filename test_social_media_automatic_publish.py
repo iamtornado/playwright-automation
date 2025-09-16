@@ -235,7 +235,7 @@ def generate_summary_with_doubao(browser_context, markdown_file):
         # 点击复制按钮获取AI回复内容
         print("9️⃣ 复制AI回复内容...")
         copy_button = page_doubao.get_by_test_id("receive_message").get_by_test_id("message_action_copy")
-        copy_button.click()
+        copy_button.click(timeout=60000)
         page_doubao.wait_for_timeout(1000)
         print("✅ AI回复已复制到剪贴板")
         
@@ -453,7 +453,7 @@ def generate_tags_with_doubao(browser_context, markdown_file):
         
         # 输入话题标签生成请求的提示词
         print("6️⃣ 输入话题标签生成提示词...")
-        prompt_text = "我想将这篇文章发布到各个主流的社交媒体平台，包括但不限于：微信公众号、CSDN、知乎、51CTO、博客园、小红书、快手、抖音等等，请根据文章的内容，帮我想出10个话题标签。请严格按照以下格式返回：['标签1', '标签2', '标签3', '标签4', '标签5', '标签6', '标签7', '标签8', '标签9', '标签10']，不要换行，不要添加其他文字，标签决不能包含空格，只返回Python列表格式的字符串。"
+        prompt_text = "我想将这篇文章发布到各个主流的社交媒体平台，包括但不限于：微信公众号、CSDN、知乎、51CTO、博客园、小红书、快手、抖音等等，请根据文章的内容，帮我想出10个话题标签。请严格按照以下格式返回：['标签1', '标签2', '标签3', '标签4', '标签5', '标签6', '标签7', '标签8', '标签9', '标签10']，不要换行，不要添加其他文字，标签决不能包含空格，也不能包含任何特殊字符,只返回Python列表格式的字符串。"
         page_doubao.get_by_test_id("chat_input_input").fill(prompt_text)
         page_doubao.wait_for_timeout(1000)
         print("✅ 提示词输入完成")
@@ -881,7 +881,8 @@ def test_example(browser_context, request):
                         else:
                             print(f"⚠️  生成的短标题仍然过长({short_title_length}字符)")
                             print("设置默认短标题")
-                            short_title = "查询远程计算机管理员组成员的脚本"
+                            short_title = "imgurl，一个免费的图床"
+                            sys.exit(1)
                     else:
                         print("❌ 豆包AI生成短标题失败，将使用原标题")
                         short_title = title
@@ -1682,6 +1683,7 @@ def test_example(browser_context, request):
                 print(f"ℹ️ 清空标签时出错（可能没有现有标签）: {e}")
             
             # 设置文章标签
+            print("🏷️  正在设置文章标签...")
             page_51cto.get_by_text("标签", exact=True).click()
             page_51cto.get_by_role("textbox", name="请设置标签，最多可设置5个，支持，；enter间隔").click()
             
@@ -1691,10 +1693,12 @@ def test_example(browser_context, request):
                 page_51cto.get_by_role("textbox", name="请设置标签，最多可设置5个，支持，；enter间隔").press("Enter")
             
             # 设置文章摘要
+            print("🏷️  正在设置文章摘要...")
             page_51cto.get_by_role("textbox", name="请填写文章摘要，最多可填写500").click()
             page_51cto.get_by_role("textbox", name="请填写文章摘要，最多可填写500").fill(summary)
             
             # 设置话题
+            print("🏷️  正在设置话题...")
             page_51cto.get_by_role("textbox", name="请填写话题").click()
             page_51cto.get_by_text("#yyds干货盘点#").click()
             
@@ -1705,10 +1709,16 @@ def test_example(browser_context, request):
             # 或者使用更精确的选择器，注意，图片不能超过1.9MB，否则会报错
             # page_51cto.locator("input[type='file'].upload_input").set_input_files(cover_image)
 
-            # 注意：这里只是保存设置，实际发布需要手动点击发布按钮
+            # 发布文章
+            print("🏷️  正在发布文章...")
             page_51cto.get_by_role("button", name="发布", exact=True).click()
             # 验证是否发布成功
-            page_51cto.get_by_text("发布成功 - 待审核").click()
+            try:
+                # 不一定会出现"发布成功 - 待审核"文本，因为如果文档中没有检测到敏感词，则不会出现这个文本。
+                page_51cto.get_by_text("发布成功 - 待审核").click()
+                print("✅ 文章发布成功！")
+            except Exception as e:
+                print(f"ℹ️ 未找到'发布成功 - 待审核'文本，程序继续执行: {e}")
 
         ## 博客园，发布文章。
         ## 支持Markdown导入，自动提取图片，设置分类等
@@ -2036,7 +2046,7 @@ def test_example(browser_context, request):
             # 设置标题 - 修正iframe的name属性
             page_bilibili.wait_for_selector("iframe[src*='/article-text/home']")
             iframe = page_bilibili.locator("iframe[src*='/article-text/home']").content_frame
-            iframe.get_by_role("textbox", name="请输入标题（建议30字以内）").fill(short_title)
+            iframe.get_by_role("textbox", name="请输入标题（建议30字以内）").fill(title)
             
             # 设置正文内容
             iframe.get_by_role("paragraph").click()

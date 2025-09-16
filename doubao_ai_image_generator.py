@@ -153,11 +153,23 @@ class DoubaoAIImageGenerator:
     
     def _get_prompt_generation_text(self) -> str:
         """获取提示词生成请求文本"""
-        return """请仔细阅读我提供的markdown文件，我计划将文章发布到微信公众号上，我需要文章封面图，请根据markdown文件内容，生成一段合适的文生图提示词。
-注意：
-1.提示词的语言为英文。
-2.提示词中需要包含这个反向提示词：no Chinese character
-3.你的回答只需返回提示词，不要返回任何其他内容。"""
+        return """You are an expert in text-to-image prompt engineering.
+
+I will provide you with a Markdown file as an input attachment.
+This file contains an article written for publication on a WeChat Official Account.
+
+Your task:
+1. Read and analyze the Markdown file to understand the article’s content, theme, and **its filename** (prioritize identifying the filename).
+2. Completely ignore any code blocks, command-line examples, or technical syntax within the file.
+3. Summarize the main subject and mood of the article.
+4. Generate **one single high-quality English prompt** for a text-to-image model (such as Doubao).
+5. The image must be suitable as a **WeChat article cover**:
+   - Aspect ratio: 16:9
+   - Style: professional, clean, visually appealing
+   - Subject should be clear and aligned with the article’s theme
+   - The image must display a prominent title, and this title must be **exactly the same as the filename of the provided Markdown file** (the title may include Chinese characters as per the filename)
+   - Except for the prominent title (which matches the Markdown file’s filename) mentioned above, the image must not include any other text, code snippets, logos, or watermarks
+6. Output only the final prompt in English. Do not include explanations. """
     
     def _send_prompt_request(self, prompt_text: str) -> None:
         """发送提示词生成请求"""
