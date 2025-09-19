@@ -135,7 +135,7 @@ cd playwright-automation
 uv sync
 ```
 
-3. **安装Playwright浏览器**
+3. **安装chromium浏览器**
 ```bash
 uv run playwright install chromium
 ```
@@ -235,6 +235,7 @@ graph LR
 
 ```bash
 # 基本使用 - 发布到所有平台
+# 特别注意：必须要添加--headed参数，这会开启浏览器可视化模式，如果不加此参数，则默认为headless模式，无法看到浏览器操作过程，而且脚本执行过程中会报错。
 uv run pytest -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py --title="文章标题" --author="作者名"
 
 # 指定特定平台

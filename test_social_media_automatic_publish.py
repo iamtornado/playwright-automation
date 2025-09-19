@@ -1728,9 +1728,9 @@ def test_example(browser_context, request):
             shutil.copy2(original_markdown_path, cto_markdown_path)
             print("✅ 已创建51CTO专用markdown文件副本")
             
-            # 创建markdown清理器实例，专门移除微信公众号关注行
+            # 创建markdown清理器实例，专门移除微信公众号关注行和作者信息行
             cleaner = MarkdownCleaner(
-                keywords=["关注微信公众号"],
+                keywords=["关注微信公众号", "关于作者和DreamAI"],
                 mode="contains",
                 case_sensitive=False,
                 backup=False  # 不为51CTO文件创建备份
