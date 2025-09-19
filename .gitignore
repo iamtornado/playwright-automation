@@ -12,6 +12,7 @@ wheels/
 .venv
 
 browser_data
+browser_data/*
 
 chromium-browser-data/
 chromium-browser-data_backup_*
@@ -26,8 +27,13 @@ opera-browser-data_backup_*
 brave-browser-data/
 brave-browser-data_backup_*
 
+debug/
+
 markdown_files
+markdown_files/*
 downloads
+downloads/*
 generated_images
+generated_images/*
 
 *.html

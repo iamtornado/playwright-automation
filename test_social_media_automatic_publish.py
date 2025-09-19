@@ -3,11 +3,15 @@ import re
 import random
 import sys
 import os
+from pathlib import Path
 from playwright.sync_api import Page, expect
 # import pyperclip
 
 # 导入字数统计功能
-from simple_word_counter import validate_and_clean_text
+from word_counter_sdk import validate_and_clean_text
+
+# 导入钉钉SDK
+from dingtalk_sdk import create_sdk
 
 # 定义各平台的话题标签数量限制
 PLATFORM_TAG_LIMITS = {
@@ -23,6 +27,11 @@ PLATFORM_TAG_LIMITS = {
 app_id = os.getenv("WECHAT_APP_ID")
 app_secret = os.getenv("WECHAT_APP_SECRET")
 
+# 获取钉钉APP_KEY和APP_SECRET
+dingtalk_app_key = os.getenv("DINGTALK_APP_KEY")
+dingtalk_app_secret = os.getenv("DINGTALK_APP_SECRET")
+dingtalk_user_id = os.getenv("DINGTALK_USER_ID")
+
 if not app_id or not app_secret:
     print("❌ 请设置环境变量 WECHAT_APP_ID 和 WECHAT_APP_SECRET")
     print("例如：")
@@ -37,6 +46,25 @@ if not app_id or not app_secret:
     print("Windows (PowerShell):")
     print("$env:WECHAT_APP_ID='your_app_id'")
     print("$env:WECHAT_APP_SECRET='your_app_secret'")
+    exit(1)
+
+if not dingtalk_app_key or not dingtalk_app_secret or not dingtalk_user_id:
+    print("❌ 请设置环境变量 DINGTALK_APP_KEY, DINGTALK_APP_SECRET 和 DINGTALK_USER_ID")
+    print("例如：")
+    print("Linux/macOS:")
+    print("export DINGTALK_APP_KEY=your_app_key")
+    print("export DINGTALK_APP_SECRET=your_app_secret")
+    print("export DINGTALK_USER_ID=your_user_id")
+    print("")
+    print("Windows (命令提示符):")
+    print("set DINGTALK_APP_KEY=your_app_key")
+    print("set DINGTALK_APP_SECRET=your_app_secret")
+    print("set DINGTALK_USER_ID=your_user_id")
+    print("")
+    print("Windows (PowerShell):")
+    print("$env:DINGTALK_APP_KEY='your_app_key'")
+    print("$env:DINGTALK_APP_SECRET='your_app_secret'")
+    print("$env:DINGTALK_USER_ID='your_user_id'")
     exit(1)
 
 def compress_image(image_path, max_size_mb=5, quality=85):
@@ -213,7 +241,7 @@ def generate_summary_with_doubao(browser_context, markdown_file):
         
         # 输入总结请求的提示词
         print("6️⃣ 输入总结提示词...")
-        prompt_text = "请帮我总结我提供的Markdown文档，总字数严格限制在120字以内。请注意：一个英文字母、一个空格、一个标点符号都算一个字"
+        prompt_text = "请帮我总结我提供的Markdown文档，总字数严格限制在120字以内，你的回答只需包含总结内容，不要包含任何其他文字。请注意：一个英文字母、一个空格、一个标点符号都算一个字"
         page_doubao.get_by_test_id("chat_input_input").fill(prompt_text)
         page_doubao.wait_for_timeout(1000)
         print("✅ 提示词输入完成")
@@ -234,10 +262,20 @@ def generate_summary_with_doubao(browser_context, markdown_file):
         
         # 点击复制按钮获取AI回复内容
         print("9️⃣ 复制AI回复内容...")
-        copy_button = page_doubao.get_by_test_id("receive_message").get_by_test_id("message_action_copy")
-        copy_button.click(timeout=60000)
-        page_doubao.wait_for_timeout(1000)
-        print("✅ AI回复已复制到剪贴板")
+        # 获取所有复制按钮，选择最后一个（最新的回复）
+        copy_buttons = page_doubao.get_by_test_id("receive_message").get_by_test_id("message_action_copy")
+        copy_button_count = copy_buttons.count()
+        print(f"📊 找到 {copy_button_count} 个复制按钮")
+        
+        if copy_button_count > 0:
+            # 选择最后一个复制按钮（索引为 count-1）
+            last_copy_button = copy_buttons.nth(copy_button_count - 1)
+            last_copy_button.click(timeout=60000)
+            page_doubao.wait_for_timeout(1000)
+            print("✅ AI最新回复已复制到剪贴板")
+        else:
+            print("❌ 未找到复制按钮")
+            raise Exception("未找到复制按钮")
         
         # 使用 pyperclip 从剪贴板读取内容
         try:
@@ -333,7 +371,7 @@ def generate_newspic_title_with_doubao(browser_context, markdown_file):
         
         # 输入图文消息的标题请求的提示词
         print("6️⃣ 输入图文消息的标题提示词...")
-        prompt_text = "请帮我生成我提供的Markdown文档的图文消息的标题，总字数严格限制在20字以内。请注意：一个英文字母、一个空格、一个标点符号都算一个字"
+        prompt_text = "请帮我生成我提供的Markdown文档的图文消息的标题，总字数严格限制在20字以内，你的回答只需包含标题内容，不要包含任何其他文字。请注意：一个英文字母、一个空格、一个标点符号都算一个字"
         page_doubao.get_by_test_id("chat_input_input").fill(prompt_text)
         page_doubao.wait_for_timeout(1000)
         print("✅ 提示词输入完成")
@@ -645,7 +683,11 @@ def test_example(browser_context, request):
             
         # 标记是否需要从钉钉文档下载markdown文件
         need_download_markdown = not markdown_file
-            
+        
+        # 标记是否需要利用dingtalk_sdk获取钉钉文档的url
+        # 只有在提供了markdown文件但没有提供url参数时，才需要获取钉钉文档的url
+        need_get_dingtalk_url = not url and markdown_file
+
         if cover_image:
             print(f"🖼️  使用指定的封面图: {cover_image}")
         else:
@@ -668,6 +710,35 @@ def test_example(browser_context, request):
         
         print(f"将发布到以下平台: {', '.join(target_platforms)}")
         print(f"使用封面图片: {cover_image}")
+
+        # 如果未指定url，则利用dingtalk_sdk搜索并获取钉钉文档的url
+        if need_get_dingtalk_url:
+            print("📁 未指定URL，正在利用dingtalk_sdk搜索钉钉文档...")
+            print(f"🔍 搜索关键词: {title}")
+            
+            try:
+                # 创建钉钉SDK实例
+                dingtalk_sdk = create_sdk(dingtalk_app_key, dingtalk_app_secret)
+                
+                # 使用title作为关键词搜索文档并获取详细信息
+                documents = dingtalk_sdk.search_and_get_document_details_with_user_id(title, dingtalk_user_id)
+                
+                if documents:
+                    # 获取第一个搜索结果的URL
+                    url = documents[0].url
+                    print(f"✅ 找到文档: {documents[0].title}")
+                    print(f"🔗 获取到的钉钉文档URL: {url}")
+                else:
+                    print(f"❌ 未找到包含关键词 '{title}' 的钉钉文档")
+                    print("请检查标题是否正确，或手动指定URL参数")
+                    sys.exit(1)
+                    
+            except Exception as e:
+                print(f"❌ 获取钉钉文档URL失败: {e}")
+                print("请检查钉钉API配置或手动指定URL参数")
+                sys.exit(1)
+        else:
+            print(f"🔗 使用指定的URL: {url}")
 
         # 如果没有指定markdown文件，则从钉钉文档下载
         if need_download_markdown:
@@ -1391,14 +1462,15 @@ def test_example(browser_context, request):
             # 保存为草稿（避免意外丢失）
             print("💾 正在保存为草稿...")
             page_wechat.get_by_role("button", name="保存为草稿").click()
-            # 检查是否出现"已保存"文本，如果出现则点击，否则继续执行
+            # 检查是否出现"已保存"文本，如果出现则点击，否则继续执行。如果正文中有图片转存失败，则“已保存”提示不会出现。最终保存为草稿也会失败。
             try:
                 save_success_element = page_wechat.locator("#js_save_success").get_by_text("已保存")
-                if save_success_element.is_visible(timeout=3000):
+                if save_success_element.is_visible(timeout=30000):
                     save_success_element.click()
                     print("✅ 点击了'已保存'提示")
                 else:
                     print("ℹ️  未出现'已保存'提示，继续执行")
+                    page_wechat.pause()
             except Exception as e:
                 print(f"ℹ️  处理'已保存'提示时出错，继续执行: {e}")
             print("✅ 文章已保存为草稿")
@@ -1444,7 +1516,28 @@ def test_example(browser_context, request):
             
             # 点击"文档"按钮打开导入模态框
             print("点击'文档'按钮以弹出导入菜单")
-            page_zhihu_editor.get_by_role("button", name="文档").click()
+            # 使用更精确的CSS选择器定位"文档"按钮
+            try:
+                # 方法1：通过包含"文档"文本的span元素定位
+                page_zhihu_editor.locator("span.css-8atqhb:has-text('文档')").click()
+                print("✅ 通过span.css-8atqhb定位成功")
+            except Exception as e1:
+                print(f"⚠️ 方法1失败: {e1}")
+                try:
+                    # 方法2：通过按钮的aria-label属性定位
+                    page_zhihu_editor.locator("button[aria-label='文档']").click()
+                    print("✅ 通过aria-label定位成功")
+                except Exception as e2:
+                    print(f"⚠️ 方法2失败: {e2}")
+                    try:
+                        # 方法3：通过包含特定class的按钮定位
+                        page_zhihu_editor.locator("button.ToolbarButton:has-text('文档')").click()
+                        print("✅ 通过ToolbarButton class定位成功")
+                    except Exception as e3:
+                        print(f"⚠️ 方法3失败: {e3}")
+                        # 方法4：兜底方案，使用原来的方式
+                        page_zhihu_editor.get_by_role("button", name="文档").click()
+                        print("✅ 使用兜底方案定位成功")
             
             # 等待弹窗出现，使用更稳定的定位方式
             print("等待弹窗出现...")
@@ -1610,6 +1703,67 @@ def test_example(browser_context, request):
             page_csdn_md_editor.get_by_label("Insert publishArticle").get_by_role("button", name="发布文章").click()
             page_csdn_md_editor.get_by_text("发布成功！正在审核中").click()
 
+        # 在发布到51CTO之前，先处理markdown文件
+        print("=" * 60)
+        print("🧹 正在处理51CTO专用的markdown文件...")
+        print("=" * 60)
+        
+        # 初始化变量，默认使用原始文件
+        final_51cto_markdown_path = markdown_file
+        
+        try:
+            # 导入markdown清理工具（简化后的导入方式）
+            from markdown_cleaner_sdk import MarkdownCleaner
+            
+            
+            # 创建原始markdown文件的副本，专门用于51CTO
+            original_markdown_path = Path(markdown_file)
+            cto_markdown_path = original_markdown_path.parent / f"51CTO_{original_markdown_path.name}"
+            
+            print(f"📁 原始markdown文件: {original_markdown_path}")
+            print(f"📁 51CTO专用文件: {cto_markdown_path}")
+            
+            # 复制原始文件
+            import shutil
+            shutil.copy2(original_markdown_path, cto_markdown_path)
+            print("✅ 已创建51CTO专用markdown文件副本")
+            
+            # 创建markdown清理器实例，专门移除微信公众号关注行
+            cleaner = MarkdownCleaner(
+                keywords=["关注微信公众号"],
+                mode="contains",
+                case_sensitive=False,
+                backup=False  # 不为51CTO文件创建备份
+            )
+            # 清理51CTO专用文件
+            result = cleaner.clean_file(cto_markdown_path)
+            
+            print("✅ 51CTO markdown文件清理完成!")
+            print(f"📊 原行数: {result['original_lines']}")
+            print(f"📊 删除行数: {result['removed_lines']}")
+            print(f"📊 剩余行数: {result['remaining_lines']}")
+            
+            if result['removed_content']:
+                print("🗑️  删除的内容:")
+                for item in result['removed_content']:
+                    print(f"   第{item['line_number']}行: {item['content']}")
+            
+            # 更新markdown_file变量为清理后的51CTO专用文件
+            final_51cto_markdown_path = str(cto_markdown_path)
+            print(f"✅ 已更新markdown_file为51CTO专用文件: {final_51cto_markdown_path}")
+            
+        except ImportError as e:
+            print(f"❌ 无法导入markdown清理工具: {e}")
+            print("⚠️  将使用原始markdown文件，可能包含微信公众号关注信息")
+        except Exception as e:
+            print(f"❌ 处理51CTO markdown文件时出错: {e}")
+            print("⚠️  将使用原始markdown文件，可能包含微信公众号关注信息")
+        
+        print("=" * 60)
+        
+        
+        
+        
         ## 51CTO博客，发布文章。
         ## 51CTO发布文章时，支持自动从正文中找一张合适的图片作为封面图
         if '51cto' in target_platforms:
@@ -1635,7 +1789,7 @@ def test_example(browser_context, request):
                 page_51cto.locator("button .iconeditor.editorimport").click()
             
             file_chooser = fc_info.value
-            file_chooser.set_files(markdown_file)
+            file_chooser.set_files(final_51cto_markdown_path)
             
             page_51cto.wait_for_timeout(10000)
             print("等待文档基本加载完成...")

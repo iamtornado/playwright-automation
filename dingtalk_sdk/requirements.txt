@@ -1,0 +1,4 @@
+# 钉钉SDK依赖包
+alibabacloud-dingtalk>=2.0.0
+alibabacloud-tea-openapi>=0.3.0
+alibabacloud-tea-util>=0.3.0

@@ -256,48 +256,20 @@ class WeChatMPSDK:
         return self.upload_permanent_material(file_path, 'thumb')
 
 
-# 使用示例
-if __name__ == "__main__":
-    # 从环境变量中读取配置
-    app_id = os.getenv("WECHAT_APP_ID")
-    app_secret = os.getenv("WECHAT_APP_SECRET")
+class WeChatMPSDKError(Exception):
+    """微信公众号SDK异常类"""
+    pass
+
+
+def create_sdk(app_id: str, app_secret: str) -> WeChatMPSDK:
+    """
+    创建微信公众号SDK实例的便捷函数
     
-    if not app_id or not app_secret:
-        print("❌ 请设置环境变量 WECHAT_APP_ID 和 WECHAT_APP_SECRET")
-        print("例如：")
-        print("Linux/macOS:")
-        print("export WECHAT_APP_ID=your_app_id")
-        print("export WECHAT_APP_SECRET=your_app_secret")
-        print("")
-        print("Windows (命令提示符):")
-        print("set WECHAT_APP_ID=your_app_id")
-        print("set WECHAT_APP_SECRET=your_app_secret")
-        print("")
-        print("Windows (PowerShell):")
-        print("$env:WECHAT_APP_ID='your_app_id'")
-        print("$env:WECHAT_APP_SECRET='your_app_secret'")
-        exit(1)
-    
-    # 初始化SDK
-    sdk = WeChatMPSDK(
-        app_id=app_id,
-        app_secret=app_secret
-    )
-    
-    try:
-        # 上传图片素材
-        image_path = "D:/Users/14266/Downloads/创建移轴摄影风格画面.png"
-        result = sdk.upload_image(image_path)
-        print(f"图片上传成功，media_id: {result['media_id']}")
-        print(f"图片URL: {result.get('url', 'N/A')}")
+    Args:
+        app_id: 微信公众号的AppID
+        app_secret: 微信公众号的AppSecret
         
-        # 上传视频素材
-        # video_result = sdk.upload_video(
-        #     file_path="path/to/your/video.mp4",
-        #     title="视频标题",
-        #     introduction="视频描述"
-        # )
-        # print(f"视频上传成功，media_id: {video_result['media_id']}")
-        
-    except Exception as e:
-        print(f"上传失败: {str(e)}")
+    Returns:
+        WeChatMPSDK实例
+    """
+    return WeChatMPSDK(app_id=app_id, app_secret=app_secret)

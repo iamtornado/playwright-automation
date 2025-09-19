@@ -77,6 +77,9 @@ class DoubaoAIImageGenerator:
         try:
             print("🎨 开始生成图片...")
             
+            # 选择豆包AI的模式为思考模式
+            # self.select_ai_mode("思考")
+
             # 切换到图片生成技能
             self._switch_to_image_generation_skill()
 
@@ -120,6 +123,9 @@ class DoubaoAIImageGenerator:
         try:
             print("🚀 开始完整的图片生成流程...")
             
+            # 选择豆包AI的模式为思考模式
+            self.select_ai_mode("思考")
+
             # 步骤1：生成提示词
             prompt = self.generate_prompt_from_markdown(markdown_file)
             if not prompt:
@@ -167,8 +173,7 @@ Your task:
    - Aspect ratio: 16:9
    - Style: professional, clean, visually appealing
    - Subject should be clear and aligned with the article’s theme
-   - The image must display a prominent title, and this title must be **exactly the same as the filename of the provided Markdown file** (the title may include Chinese characters as per the filename)
-   - Except for the prominent title (which matches the Markdown file’s filename) mentioned above, the image must not include any other text, code snippets, logos, or watermarks
+   - the image must not include any other text, code snippets, logos, or watermarks
 6. Output only the final prompt in English. Do not include explanations. """
     
     def _send_prompt_request(self, prompt_text: str) -> None:
@@ -188,7 +193,7 @@ Your task:
         print("✅ 提示词生成请求发送成功")
         
         # 等待AI回复
-        print("⏳ 等待AI回复...")
+        print("⏳ 等待AI回复（10秒）...")
         self.page.wait_for_timeout(10000)
     
     def _fill_prompt_only(self, prompt_text: str) -> None:
@@ -211,8 +216,10 @@ Your task:
             print("📋 获取AI回复内容...")
             
             # 点击复制按钮
-            copy_button = self.page.get_by_test_id("message_action_copy")
-            if copy_button.count() > 0:
+            # 等待复制按钮出现，超时时间为1分钟
+            try:
+                copy_button = self.page.get_by_test_id("message_action_copy")
+                copy_button.wait_for(timeout=60000)  # 等待1分钟
                 copy_button.click()
                 self.page.wait_for_timeout(1000)
                 
@@ -225,8 +232,8 @@ Your task:
                 else:
                     print("⚠️  剪贴板内容为空")
                     return None
-            else:
-                print("⚠️  未找到复制按钮")
+            except Exception as e:
+                print(f"⚠️  等待复制按钮超时或点击失败: {e}")
                 return None
                 
         except Exception as e:
@@ -377,6 +384,110 @@ Your task:
         except Exception as e:
             print(f"⚠️  下载图片时出错: {e}")
             return []
+
+    def select_ai_mode(self, mode: str) -> bool:
+        """
+        选择豆包AI的模式（极速、思考、超能）
+        
+        Args:
+            mode: 要选择的模式，可选值：'极速', '思考', '超能'
+        
+        Returns:
+            bool: 是否成功选择指定模式
+        """
+        # 验证输入参数
+        valid_modes = ['极速', '思考', '超能']
+        if mode not in valid_modes:
+            print(f"❌ 无效的模式参数: {mode}")
+            print(f"有效选项: {', '.join(valid_modes)}")
+            return False
+        
+        try:
+            print(f"🔄 正在选择豆包AI的'{mode}'模式...")
+            
+            # 方法1：通过文本内容定位指定模式按钮
+            try:
+                mode_button = self.page.get_by_text(mode, exact=True)
+                if mode_button.count() > 0:
+                    mode_button.click()
+                    self.page.wait_for_timeout(1000)
+                    print(f"✅ 通过文本定位成功选择'{mode}'模式")
+                    return True
+            except Exception as e1:
+                print(f"⚠️  方法1失败: {e1}")
+            
+            # 方法2：通过CSS类名和文本内容定位
+            try:
+                mode_button = self.page.locator(f"span.button-mE6AaR:has-text('{mode}')")
+                if mode_button.count() > 0:
+                    mode_button.click()
+                    self.page.wait_for_timeout(1000)
+                    print(f"✅ 通过CSS类名和文本内容定位成功选择'{mode}'模式")
+                    return True
+            except Exception as e2:
+                print(f"⚠️  方法2失败: {e2}")
+            
+            # 方法3：通过包含指定文本的span元素定位
+            try:
+                mode_button = self.page.locator(f"span:has-text('{mode}')")
+                if mode_button.count() > 0:
+                    # 过滤出具有button-mE6AaR类的元素
+                    for i in range(mode_button.count()):
+                        element = mode_button.nth(i)
+                        if "button-mE6AaR" in element.get_attribute("class", ""):
+                            element.click()
+                            self.page.wait_for_timeout(1000)
+                            print(f"✅ 通过span元素定位成功选择'{mode}'模式")
+                            return True
+            except Exception as e3:
+                print(f"⚠️  方法3失败: {e3}")
+            
+            # 方法4：通过tabindex属性定位（查找所有可点击的按钮）
+            try:
+                all_buttons = self.page.locator("span[tabindex='0']")
+                if all_buttons.count() > 0:
+                    for i in range(all_buttons.count()):
+                        button = all_buttons.nth(i)
+                        button_text = button.text_content()
+                        if button_text == mode:
+                            button.click()
+                            self.page.wait_for_timeout(1000)
+                            print(f"✅ 通过tabindex属性定位成功选择'{mode}'模式")
+                            return True
+            except Exception as e4:
+                print(f"⚠️  方法4失败: {e4}")
+            
+            # 方法5：兜底方案 - 查找所有包含指定文本的元素
+            try:
+                all_mode_elements = self.page.locator(f"*:has-text('{mode}')")
+                if all_mode_elements.count() > 0:
+                    # 遍历所有包含指定文本的元素，找到可点击的按钮
+                    for i in range(all_mode_elements.count()):
+                        element = all_mode_elements.nth(i)
+                        element_class = element.get_attribute("class", "")
+                        if "button-mE6AaR" in element_class or "button" in element_class:
+                            element.click()
+                            self.page.wait_for_timeout(1000)
+                            print(f"✅ 通过兜底方案成功选择'{mode}'模式")
+                            return True
+            except Exception as e5:
+                print(f"⚠️  方法5失败: {e5}")
+            
+            print(f"❌ 所有方法都无法找到'{mode}'模式按钮")
+            return False
+            
+        except Exception as e:
+            print(f"❌ 选择'{mode}'模式时出错: {e}")
+            return False
+
+    def select_thinking_mode(self) -> bool:
+        """
+        选择豆包AI的"思考"模式（向后兼容方法）
+        
+        Returns:
+            bool: 是否成功选择思考模式
+        """
+        return self.select_ai_mode("思考")
 
 
 def create_doubao_generator(page: Page, context: BrowserContext) -> DoubaoAIImageGenerator:

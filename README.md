@@ -1,419 +1,615 @@
-# 社交媒体自动发布测试脚本
+# Playwright自动化项目
 
-## 项目简介
+这是一个基于Playwright的社交媒体自动化发布系统，集成了AI功能和多平台发布能力。
 
-这是一个基于 Playwright 的自动化测试脚本，用于将 Markdown 格式的文章自动发布到多个社交媒体平台。支持微信公众号、知乎、CSDN、51CTO、博客园、小红书、抖音、快手、哔哩哔哩等主流平台。
+## ✨ 主要功能
 
-## 主要特性
+- 🚀 **多平台自动发布**：支持微信公众号、知乎、CSDN、51CTO、博客园、抖音、快手、小红书等平台
+- 🤖 **AI内容生成**：集成豆包AI和Gemini（二者选一），支持文章总结和图片生成
+- 📄 **智能内容处理**：自动从钉钉文档获取内容，智能清理和格式化
+- 🎯 **字数统计优化**：自动优化文本长度，符合各平台要求
+- 🔧 **模块化设计**：独立的SDK和工具模块，易于维护和扩展
 
-- 🚀 **多平台支持**：一键发布到多个社交媒体平台
-- 🔄 **智能转换**：使用 mdnice 将 Markdown 转换为微信公众号兼容格式
-- ✨ **自动填充**：自动填充标题、作者、摘要、封面图片等信息
-- 🤖 **AI 智能生成**：集成豆包AI自动生成摘要、话题标签、短标题和封面图
-- 📄 **钉钉文档集成**：自动从钉钉文档下载Markdown文件和获取URL
-- 🎨 **AI 图片生成**：支持豆包AI和Gemini AI自动生成文章封面图
-- 💾 **草稿保存**：自动保存为草稿，避免意外丢失
-- 🎥 **视频录制**：自动录制操作过程，便于调试和演示
-- 📸 **截图保存**：为每个平台保存操作截图
-- 🔍 **智能调试**：提供详细的调试脚本和trace分析功能
+## 📁 项目结构
 
-## 支持平台
+```
+playwright-automation/
+├── 📁 dingtalk_sdk/                    # 钉钉API SDK模块
+│   ├── dingtalk_sdk.py                # 主要SDK代码
+│   ├── example_usage.py               # 使用示例
+│   ├── requirements.txt               # 依赖包列表
+│   └── README.md                      # SDK详细文档
+├── 📁 wechat_mp_sdk/                  # 微信公众号SDK模块
+│   ├── wechat_mp_sdk.py               # 主要SDK代码
+│   ├── example_usage.py               # 使用示例
+│   └── README.md                      # SDK详细文档
+├── 📁 markdown_cleaner_sdk/               # Markdown清理工具
+│   ├── markdown_cleaner.py            # 主要清理代码
+│   ├── example.py                     # 使用示例
+│   └── README.md                      # 工具文档
+├── 📁 word_counter_sdk/               # 字数统计SDK模块
+│   ├── simple_word_counter.py         # 主要统计代码
+│   ├── example_usage.py               # 使用示例
+│   └── README.md                      # SDK详细文档
+├── 📄 test_social_media_automatic_publish.py  # 🎯 主要发布脚本
+├── 📄 doubao_ai_image_generator.py     # 豆包AI图片生成模块
+├── 📄 conftest.py                      # pytest配置文件
+├── 📄 pyproject.toml                   # 项目配置文件
+└── 📄 README.md                        # 项目说明（本文件）
+```
 
-| 平台 | 类型 | 说明 |
-|------|------|------|
-| mdnice | 格式转换 | Markdown 转微信公众号格式 |
-| wechat | 公众号 | 微信公众号文章发布 |
-| zhihu | 专栏 | 知乎专栏文章发布 |
-| csdn | 博客 | CSDN 博客文章发布 |
-| 51cto | 博客 | 51CTO 博客文章发布 |
-| cnblogs | 博客 | 博客园文章发布 |
-| xiaohongshu_newspic | 图文 | 小红书图文发布 |
-| douyin_newspic | 图文 | 抖音图文发布 |
-| kuaishou_newspic | 图文 | 快手图文发布 |
-| bilibili_newspic | 专栏 | 哔哩哔哩专栏发布 |
+## 🔧 核心模块
 
-## 环境要求
+### 1. 社交媒体自动发布系统 (`test_social_media_automatic_publish.py`)
 
-- Python 3.9+
-- Playwright
-- uv
-- 已安装的浏览器（Chrome/Chromium）
-- 各平台的登录账号
-- 豆包AI账号（用于AI功能）
-- Google账号（用于Gemini AI图片生成）
-- 微信公众号开发者账号（用于素材上传）
+**主要功能：**
+- 🌐 **多平台支持**：微信公众号、知乎、CSDN、51CTO、博客园、抖音、快手、小红书等
+- 📝 **智能内容处理**：自动从钉钉文档获取内容并格式化
+- 🤖 **AI集成**：支持豆包AI生成文章总结和封面图片，并自动将生成的封面图插入到钉钉文档的首行
+- 🎯 **标签管理**：根据平台特性自动调整话题标签数量
+- 📊 **字数优化**：自动检查和优化文本长度
 
-## 安装步骤
+**支持的平台：**
+- 微信公众号（图文消息）
+- 知乎（文章发布）
+- CSDN（博客发布）
+- 51CTO（技术博客）
+- 博客园（技术文章）
+- 抖音（图文消息）
+- 快手（图文消息）
+- 小红书（图文消息）
+- 哔哩哔哩（专栏）
 
-### 1. 克隆项目
+### 2. 钉钉API SDK (`dingtalk_sdk/`)
 
+专门用于封装钉钉开放平台服务端API的Python SDK。
+
+**主要功能：**
+- 🔐 自动获取和刷新access_token
+- 👤 查询用户信息（根据userid获取unionid）
+- 🔍 搜索钉钉知识库文档
+- 📄 获取文档详细信息（包括URL）
+
+### 3. AI功能模块
+
+#### 豆包AI图片生成 (`doubao_ai_image_generator.py`)
+- 🎨 从Markdown文件生成文生图提示词
+- 🖼️ 自动生成文章封面图片
+- 📐 支持多种图片比例（16:9、1:1、4:3）
+- 🎯 支持思考模式、极速模式等AI模式选择
+
+#### AI文章总结功能
+- 📝 使用豆包AI生成120字以内的文章总结
+- 🔍 自动从剪贴板读取内容
+- ✅ 智能长度验证和优化
+- 🔗 集成在主发布脚本中
+
+#### Gemini图片生成功能（可选，默认使用豆包AI）
+- 🌟 使用Google Gemini生成高质量图片
+- 📁 自动下载到指定目录
+- 🎯 可作为封面图片自动生成选项
+
+### 4. 微信公众号SDK (`wechat_mp_sdk/`)
+
+**主要功能：**
+- 🔑 自动获取和管理access_token
+- 📤 上传永久素材（图片、语音、视频等）
+- 🛡️ 完整的错误处理机制
+- 💡 简单易用的API设计
+
+### 5. 辅助工具模块
+
+#### 字数统计SDK (`word_counter_sdk/`)
+- 📊 精确的字符数统计
+- 🔧 中英文空格智能处理
+- ⚠️ 超长文本自动警告
+- 🎯 120字限制验证（适配微信公众号）
+- 🚀 便捷的API设计和丰富示例
+
+#### Markdown清理工具 (`markdown_cleaner_sdk/`)
+- 🧹 删除包含指定关键字的行
+- 🔍 支持精确匹配、包含匹配和正则表达式
+- 💾 自动备份原文件
+- 📝 详细的操作日志
+
+## 🚀 快速开始
+
+### 环境要求
+
+- **Python 3.13+**
+- **Playwright** （用于浏览器自动化）
+- **Chrome/Chromium** （若连接到电脑中已经安装的Chrome浏览器，则需要开启调试端口）
+
+### 安装步骤
+
+1. **克隆项目**
 ```bash
-git clone <repository-url>
+git clone https://github.com/iamtornado/playwright-automation.git
 cd playwright-automation
 ```
 
-### 2. 安装依赖
-
+2. **安装依赖**
 ```bash
-# 使用 pip 安装
-pip install -r requirements.txt
-
-# 或使用 uv 安装
+# 使用uv（推荐，更快）
+# 关于playwright的详细介绍，可参考此文：https://docs.dingtalk.com/i/nodes/gpG2NdyVX3Z65nZ2sqvmaPQgWMwvDqPk
 uv sync
-
-# 安装额外的AI功能依赖
-pip install pyperclip pillow
 ```
 
-### 3. 安装 Playwright 浏览器
+3. **安装Playwright浏览器**
+```bash
+uv run playwright install chromium
+```
+
+4. **配置环境变量**
+
+创建 `.env` 文件或设置系统环境变量：
 
 ```bash
-playwright install chromium
+# 钉钉API配置
+# 可以参考此文：https://alidocs.dingtalk.com/i/nodes/pGBa2Lm8aG3qEO3ws0zZAeLLVgN7R35y
+DINGTALK_APP_KEY="your_app_key"
+DINGTALK_APP_SECRET="your_app_secret" 
+DINGTALK_USER_ID="your_user_id"
+
+# 微信公众号API配置
+# 可以参考此文：https://docs.dingtalk.com/i/nodes/GZLxjv9VGqAl6KAPs7v3m4gO86EDybno
+WECHAT_APP_ID="your_app_id"
+WECHAT_APP_SECRET="your_app_secret"
 ```
 
-### 4. 配置环境变量
+5. **启动Chrome调试模式（仅在需要连接到电脑中已经安装的Chrome浏览器时需要，playwright默认使用的是内置的chromium）**
+```bash
+# Windows
+start chrome --remote-debugging-port=9222 --user-data-dir=<此处填写你的浏览器用户数据目录，不能用默认的，必须要额外创建一个新的文件夹，否则会报错>
 
-设置微信公众号开发者账号信息：
+# macOS
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=<此处填写你的浏览器用户数据目录，不能用默认的，必须要额外创建一个新的文件夹，否则会报错>
+
+# Linux
+google-chrome --remote-debugging-port=9222 --user-data-dir=<此处填写你的浏览器用户数据目录，不能用默认的，必须要额外创建一个新的文件夹，否则会报错>
+```
+
+## 📖 使用说明
+
+### 参数决策流程图
+
+```mermaid
+graph TD
+    Start([🚀 开始使用]) --> Title{📝 是否有标题?}
+    Title -->|否| TitleRequired[❌ 必须提供 --title 参数]
+    Title -->|是| HasMarkdown{📁 是否有现成的Markdown文件?}
+    
+    HasMarkdown -->|是| ProvideMarkdown[✅ 使用 --markdown-file 参数]
+    HasMarkdown -->|否| SearchDingTalk[🔍 程序将自动从钉钉搜索]
+    
+    ProvideMarkdown --> HasSummary{📄 是否有现成的摘要?}
+    SearchDingTalk --> HasSummary
+    
+    HasSummary -->|是| ProvideSummary[✅ 使用 --summary 参数]
+    HasSummary -->|否| AIGenerate[🤖 程序将使用豆包AI生成]
+    
+    ProvideSummary --> HasCover{🖼️ 是否有现成的封面图?}
+    AIGenerate --> HasCover
+    
+    HasCover -->|是| ProvideCover[✅ 使用 --cover-image 参数]
+    HasCover -->|否| AIGenerateImage[🎨 程序将使用AI生成]
+    
+    ProvideCover --> SelectPlatforms{🌐 选择发布平台}
+    AIGenerateImage --> SelectPlatforms
+    
+    SelectPlatforms --> AllPlatforms[🌍 全部平台: --platforms=all]
+    SelectPlatforms --> SpecificPlatforms[🎯 指定平台: --platforms=wechat,zhihu]
+    SelectPlatforms --> SinglePlatform[🎯 单个平台: --platforms=wechat]
+    
+    AllPlatforms --> Execute[🚀 执行命令]
+    SpecificPlatforms --> Execute
+    SinglePlatform --> Execute
+    
+    Execute --> Success[🎉 发布成功]
+    
+    TitleRequired --> End([结束])
+    Success --> End
+```
+
+### 使用场景示例
+
+```mermaid
+graph LR
+    A[使用场景] --> B[📝 完全自动化]
+    A --> C[📄 半自动化]
+    A --> D[🎯 完全控制]
+    
+    B --> B1[只提供标题<br/>其他全部AI生成]
+    B1 --> B2["--title='文章标题'"]
+    
+    C --> C1[提供部分内容<br/>其余AI补充]
+    C1 --> C2["--title='标题'<br/>--markdown-file='文件路径'"]
+    
+    D --> D1[完全指定所有参数<br/>不使用AI生成]
+    D1 --> D2["--title='标题'<br/>--summary='摘要'<br/>--cover-image='图片'<br/>--markdown-file='文件'"]
+```
+
+### 主要功能使用
+
+#### 1. 社交媒体自动发布示例
 
 ```bash
-# Windows (命令提示符)
-set WECHAT_APP_ID=your_app_id
-set WECHAT_APP_SECRET=your_app_secret
+# 基本使用 - 发布到所有平台
+uv run pytest -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py --title="文章标题" --author="作者名"
 
-# Windows (PowerShell)
-$env:WECHAT_APP_ID='your_app_id'
-$env:WECHAT_APP_SECRET='your_app_secret'
+# 指定特定平台
+uv run pytest  -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py --title="文章标题" --platforms="wechat,zhihu,csdn"
 
-# Linux/macOS
-export WECHAT_APP_ID=your_app_id
-export WECHAT_APP_SECRET=your_app_secret
-```
+# 使用自定义参数（Linux）
+uv run pytest  -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py \
+  --title="AI技术分享" \
+  --author="tornadoami" \
+  --summary="这是一篇关于AI技术的文章" \
+  --tags="AI,机器学习,深度学习" \
+  --markdown-file="path/to/article.md" \
+  --cover-image="path/to/cover.jpg"
 
-### 5. 配置浏览器用户数据目录
+# 使用自定义参数（Windows）
+uv run pytest  -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py `
+  --title="AI技术分享" `
+  --author="tornadoami" `
+  --summary="这是一篇关于AI技术的文章" `
+  --tags="AI,机器学习,深度学习" `
+  --markdown-file="path/to/article.md" `
+  --cover-image="path/to/cover.jpg"
 
-确保 `conftest.py` 中的 `--user-data-dir` 路径正确：
-
-```python
-parser.addoption("--user-data-dir", type=str, 
-                 default='D:/tornadofiles/scripts_脚本/github_projects/playwright-automation/chromium-browser-data',
-                 help='浏览器用户数据目录')
-```
-
-## 使用方法
-
-### 基本用法
-
-```bash
-# 使用默认参数运行（需要提供title参数）
-pytest -s --headed --video on --screenshot on --tracing on ./test_social_media_automatic_publish.py --title "文章标题"
-```
-
-### AI 智能生成功能
-
-```bash
-# 使用豆包AI自动生成摘要、话题标签和封面图
-pytest -s --headed ./test_social_media_automatic_publish.py \
-  --title "文章标题" \
-  --summary auto \
-  --tags auto \
-  --platforms "wechat,zhihu"
-```
-
-### 钉钉文档集成
-
-```bash
-# 从钉钉文档自动下载Markdown文件和获取URL
-pytest -s --headed ./test_social_media_automatic_publish.py \
-  --title "钉钉文档中的文章标题" \
-  --platforms "all"
-```
-
-### 自定义参数运行（Windows）
-
-```bash
+# 使用自定义参数的另外一个示例（Windows）
 uv run pytest `
     -s `
     --headed `
     --video on `
     --screenshot on `
+    --backup-browser-data false `
     --full-page-screenshot `
     --tracing on `
     ./test_social_media_automatic_publish.py `
-    --platforms zhihu `
-    --title "ollama，免费低门槛的开源大模型推理平台" `
-    --summary "本文介绍 Ollama，一个免费开源大模型推理平台，可本地运行管理模型。含官网、GitHub 地址，Linux 和 Windows 安装命令，下载、运行等常用命令，API 调用示例，多 GPU 推理支持" `
-    --url "https://docs.dingtalk.com/i/nodes/np9zOoBVBYA16qAPTEkzObKgW1DK0g6l" `
-    --markdown-file "D:/Users/14266/Downloads/ollama，免费低门槛的开源大模型推理平台.md" `
-    --cover-image "D:/Users/14266/Downloads/ollama，免费低门槛的开源大模型推理平台封面图.png"
-
+    --platforms 51cto,cnblogs,bilibili_newspic,douyin_newspic,xiaohongshu_newspic,kuaishou_newspic `
+    --tags auto `
+    --summary "本文讲MobaXterm远程Ubuntu的四种方法：SSH直接连（部分应用打不开）、SSH+Gnome（体验佳）、VNC（不推荐）、RDP（推荐，功能全）。提Ubuntu默认Wayland比X11好，及远程设置注意事项。" `
+    --url "https://alidocs.dingtalk.com/i/nodes/nYMoO1rWxa7nvZ7GubrbgPP4V47Z3je9" `
+    --markdown-file "D:/Users/14266/Downloads/mobaxterm远程桌面访问ubuntu desktop心得.md" `
+    --cover-image "D:/Users/14266/Downloads/mobaxterm远程桌面访问ubuntu desktop心得封面图.png" `
+    --short-title "mobaxterm远程桌面方法汇总" `
+    --title "mobaxterm远程桌面访问ubuntu desktop心得"
 ```
 
-### 自定义参数运行（Linux）
+**支持的命令行参数：**
+- `--title`：文章标题（必填）
+- `--author`：作者名称（默认：tornadoami）
+- `--summary`：文章摘要（可选，不指定则使用豆包AI生成）
+- `--platforms`：发布平台（默认：all，可选：wechat,zhihu,csdn,51cto,cnblogs,bilibili_newspic,douyin_newspic,xiaohongshu_newspic,kuaishou_newspic）
+- `--tags`：话题标签，用逗号分隔
+- `--url`：原文链接（可选，不指定则从钉钉文档自动获取）
+- `--short-title`：短标题（可选，用于图文平台，如不指定则自动生成）
+- `--markdown-file`：Markdown文件路径（可选，不指定则从钉钉文档获取，这种情况下title的值就是钉钉文档的标题）
+- `--cover-image`：封面图片路径（可选，不指定则使用豆包AI生成）
+- `--user-data-dir`：浏览器数据目录路径（可选，默认：D:/tornadofiles/scripts_脚本/github_projects/playwright-automation/chromium-browser-data，注意默认值是我电脑环境，你需要根据你的电脑环境来设置）
+- `--backup-browser-data`：是否备份浏览器数据，可选值：true/false，默认为true
 
+#### 2. AI功能使用
+
+##### AI功能处理流程
+
+```mermaid
+graph TD
+    Start([AI功能开始]) --> CheckSummary{需要生成摘要?}
+    
+    CheckSummary -->|是| DoubaoAI[🤖 启动豆包AI]
+    CheckSummary -->|否| CheckCover{需要生成封面?}
+    
+    DoubaoAI --> UploadMarkdown[📤 上传Markdown到豆包]
+    UploadMarkdown --> SelectMode[⚡ 选择思考模式]
+    SelectMode --> GeneratePrompt[📝 生成总结提示词]
+    GeneratePrompt --> GetSummary[📋 获取AI总结]
+    GetSummary --> ValidateSummary[📏 验证总结长度≤120字]
+    
+    ValidateSummary -->|超长| RegenerateSummary[🔄 重新生成]
+    ValidateSummary -->|合格| CleanSummary[🧹 清理中英文空格]
+    RegenerateSummary --> GetSummary
+    
+    CleanSummary --> CheckCover
+    CheckCover -->|是| ImageGeneration[🎨 图片生成流程]
+    CheckCover -->|否| AIComplete[✅ AI处理完成]
+    
+    ImageGeneration --> SwitchToImageMode[🖼️ 切换到图片生成模式]
+    SwitchToImageMode --> SetAspectRatio[📐 设置图片比例16:9]
+    SetAspectRatio --> GenerateImage[🎨 生成封面图片]
+    GenerateImage --> WaitGeneration[⏳ 等待生成完成]
+    WaitGeneration --> DownloadImage[📥 下载生成的图片]
+    DownloadImage --> CompressImage[📐 压缩图片≤5MB]
+    
+    CompressImage --> AIComplete
+    AIComplete --> End([AI功能结束])
+```
+
+**豆包AI文章总结：**
+AI文章总结功能已集成在主发布脚本中，通过 `--summary` 参数控制：
 ```bash
-uv run pytest -s --headed ./test_social_media_automatic_publish.py \
-  --title "自定义标题" \
-  --author "自定义作者" \
-  --summary "自定义摘要" \
-  --url "原文链接" \
-  --markdown-file "/path/to/article.md" \
-  --cover-image "cover.jpg" \
-  --platforms "wechat,zhihu"
+# 使用AI自动生成总结（不指定--summary参数）
+uv run pytest  -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py --title="钉钉文档标题"
+
+# 使用自定义总结
+uv run pytest  -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py --title="钉钉文档标题" --summary="自定义总结内容"
 ```
 
-### 参数说明
-
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `--title` | string | ✅ | 文章标题（必填参数） |
-| `--author` | string | ❌ | 作者名称（可选，默认使用配置值） |
-| `--summary` | string | ❌ | 文章摘要（可选，支持'auto'/'doubao'/'豆包'/'ai'使用豆包AI生成） |
-| `--url` | string | ❌ | 原文链接（可选，如不指定则从钉钉文档自动获取） |
-| `--markdown-file` | string | ❌ | Markdown文件路径（可选，如不指定则从钉钉文档自动下载） |
-| `--user-data-dir` | string | ❌ | 浏览器用户数据目录（可选，默认使用配置值） |
-| `--platforms` | string | ❌ | 指定要发布到的平台，用逗号分隔，或 'all' 表示所有平台 |
-| `--cover-image` | string | ❌ | 文章封面图片路径（可选，如不指定则使用AI自动生成） |
-| `--tags` | string | ❌ | 话题标签（可选，支持'auto'/'doubao'/'豆包'/'ai'使用豆包AI生成） |
-| `--backup-browser-data` | boolean | ❌ | 是否备份浏览器数据（可选，默认true） |
-
-### 平台选择示例
-
+**利用豆包AI生成封面图片：**
+图片生成功能在doubao_ai_image_generator.py模块中，通过 `--cover-image` 参数控制：
 ```bash
-# 发布到所有平台
---platforms all
+# 使用AI自动生成封面图片（不指定--cover-image参数）
+uv run pytest  -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py --title="钉钉文档标题"
 
-# 只发布到特定平台
---platforms wechat,zhihu
---platforms csdn,51cto
---platforms xiaohongshu_newspic,douyin_newspic
-
-# 只处理格式转换
---platforms mdnice
+# 使用自定义封面图片
+uv run pytest  -s --headed --video on --screenshot on --full-page-screenshot test_social_media_automatic_publish.py --title="钉钉文档标题" --cover-image="path/to/image.jpg"
 ```
 
-## 配置说明
-
-### conftest.py 配置
-
-在 `conftest.py` 文件中可以设置默认参数：
+#### 3. 钉钉SDK使用
 
 ```python
-def pytest_addoption(parser):
-    parser.addoption("--title", type=str, 
-                     default='默认标题',
-                     help='文章标题')
-    parser.addoption("--author", type=str, 
-                     default='默认作者', 
-                     help='作者名称')
-    # ... 其他参数
+from dingtalk_sdk import create_sdk
+
+# 创建SDK实例
+sdk = create_sdk("your_app_key", "your_app_secret")
+
+# 搜索文档并获取详细信息
+documents = sdk.search_and_get_document_details("关键词", "operator_id")
+
+for doc in documents:
+    print(f"标题: {doc.title}")
+    print(f"URL: {doc.url}")
 ```
 
-### 浏览器配置
+#### 4. 字数统计SDK
 
-脚本会自动配置浏览器环境：
+```python
+from word_counter_sdk import validate_and_clean_text, quick_count
 
-- 地理位置：深圳（22.558033372050147, 113.46251764183725）
-- 时区：Asia/Shanghai
-- 语言：zh-CN
-- 视口：1920x1080
-- 视频录制：开启，保存到 `test-results/videos/`
-- 截图：为每个平台保存操作截图
+# 验证和清理文本
+result = validate_and_clean_text("你的文本内容", max_length=120)
+print(f"处理结果: {result['message']}")
+print(f"清理后文本: {result['cleaned_text']}")
 
-## 工作流程
-
-1. **初始化**：启动浏览器，设置环境参数
-2. **钉钉文档处理**：自动下载Markdown文件和获取URL（如未指定）
-3. **AI 智能生成**：使用豆包AI生成摘要、话题标签、短标题（如未指定）
-4. **封面图生成**：使用豆包AI或Gemini AI生成文章封面图（如未指定）
-5. **图片压缩**：自动压缩封面图以符合平台要求
-6. **微信公众号素材上传**：将封面图上传到微信公众号素材库
-7. **钉钉文档更新**：将封面图插入钉钉文档并重新下载
-8. **mdnice 转换**：将 Markdown 转换为微信公众号兼容格式
-9. **多平台发布**：依次发布到各个指定平台
-10. **自动填充**：自动设置标题、作者、摘要、封面等
-11. **草稿保存**：自动保存为草稿，避免内容丢失
-12. **结果记录**：保存截图、视频录制、操作轨迹
-
-## 注意事项
-
-### 首次使用
-
-1. **账号登录**：首次运行前需要手动登录各平台账号
-   - 豆包AI账号：用于AI功能
-   - Google账号：用于Gemini AI图片生成
-   - 微信公众号账号：用于素材上传
-   - 各社交媒体平台账号：用于内容发布
-2. **权限设置**：确保各平台账号有发布权限
-3. **内容审核**：注意各平台的内容审核规则
-4. **环境变量配置**：设置微信公众号开发者账号信息
-
-### 运行建议
-
-1. **测试环境**：建议先在测试环境中验证功能
-2. **网络稳定**：确保网络连接稳定，避免上传失败
-3. **磁盘空间**：视频录制和截图会生成大量文件
-4. **内容合规**：确保发布内容符合各平台规范
-
-### 常见问题
-
-1. **登录失效**：定期检查登录状态，必要时重新登录
-2. **元素定位**：如果网站结构变化，可能需要更新选择器
-3. **上传失败**：检查文件格式和大小是否符合要求
-4. **超时错误**：适当调整等待时间，适应网络环境
-
-## 示例用例
-
-### 发布技术文章
-
-```bash
-pytest -s --headed ./test_social_media_automatic_publish.py \
-  --title "AutoGPT：可持续运行的智能代理平台" \
-  --author "tornadoami" \
-  --summary "本文介绍AutoGPT的核心功能和使用方法，包括安装配置、功能特性、应用场景等" \
-  --url "https://example.com/autogpt-guide" \
-  --markdown-file "./articles/autogpt-guide.md" \
-  --cover-image "./images/autogpt-cover.jpg" \
-  --platforms "wechat,zhihu,csdn"
+# 快速获取字符数
+count = quick_count("测试文本")
+print(f"字符数: {count}")
 ```
 
-### 发布产品介绍
 
-```bash
-pytest -s --headed ./test_social_media_automatic_publish.py \
-  --title "新一代AI助手：让工作更高效" \
-  --author "产品团队" \
-  --summary "介绍我们最新开发的AI助手产品，展示其核心功能和实际应用效果" \
-  --url "https://company.com/ai-assistant" \
-  --markdown-file "./articles/ai-assistant.md" \
-  --cover-image "./images/ai-assistant-cover.jpg" \
-  --platforms "all"
+
+## 🛠️ 开发指南
+
+### 项目架构
+
+#### 核心架构图
+
+```mermaid
+graph TB
+    A[📝 用户输入参数] --> B{参数验证}
+    B -->|缺少必需参数| C[❌ 退出并提示]
+    B -->|参数完整| D[🔄 内容获取阶段]
+    
+    D --> E{是否提供Markdown文件?}
+    E -->|否| F[🔍 从钉钉文档搜索并下载]
+    E -->|是| G[📁 使用指定文件]
+    
+    F --> H[📄 获得Markdown内容]
+    G --> H
+    
+    H --> I{是否需要生成摘要?}
+    I -->|是| J[🤖 豆包AI生成摘要]
+    I -->|否| K[📝 使用指定摘要]
+    
+    J --> L[✅ 摘要处理完成]
+    K --> L
+    
+    L --> M{是否需要生成封面图?}
+    M -->|是| N[🎨 AI生成封面图]
+    M -->|否| O[🖼️ 使用指定图片]
+    
+    N --> P[📐 图片压缩优化]
+    O --> P
+    
+    P --> Q[🚀 多平台发布阶段]
+    
+    Q --> R[📋 解析目标平台列表]
+    R --> S[🔄 遍历每个平台]
+    
+    S --> T{平台类型判断}
+    T -->|微信公众号| U[📤 微信发布流程]
+    T -->|知乎| V[📝 知乎发布流程]
+    T -->|CSDN| W[💻 CSDN发布流程]
+    T -->|其他平台| X[🌐 通用发布流程]
+    
+    U --> Y[✅ 发布完成]
+    V --> Y
+    W --> Y
+    X --> Y
+    
+    Y --> Z{还有其他平台?}
+    Z -->|是| S
+    Z -->|否| AA[🎉 全部发布完成]
 ```
 
-## 开发说明
+#### 详细处理流程
 
-### 项目结构
-
+```mermaid
+flowchart TD
+    Start([🚀 开始执行]) --> Init[⚙️ 初始化配置]
+    Init --> ValidateEnv{🔐 环境变量检查}
+    
+    ValidateEnv -->|缺少配置| EnvError[❌ 显示配置帮助]
+    ValidateEnv -->|配置完整| ParseArgs[📋 解析命令行参数]
+    
+    ParseArgs --> ValidateArgs{✅ 参数验证}
+    ValidateArgs -->|缺少title| ArgError[❌ 显示使用帮助]
+    ValidateArgs -->|参数有效| ContentFlow[📄 内容获取流程]
+    
+    ContentFlow --> HasMarkdown{📁 是否提供Markdown?}
+    HasMarkdown -->|否| SearchDingTalk[🔍 钉钉文档搜索]
+    HasMarkdown -->|是| UseProvided[📝 使用提供的文件]
+    
+    SearchDingTalk --> DownloadMarkdown[⬇️ 下载Markdown内容]
+    DownloadMarkdown --> CleanContent[🧹 清理文档内容]
+    UseProvided --> CleanContent
+    
+    CleanContent --> SummaryCheck{📝 是否需要生成摘要?}
+    SummaryCheck -->|是| AIGenerate[🤖 豆包AI生成摘要]
+    SummaryCheck -->|否| UseSummary[📄 使用指定摘要]
+    
+    AIGenerate --> ValidateLength[📏 验证摘要长度]
+    UseSummary --> ValidateLength
+    
+    ValidateLength --> CoverCheck{🖼️ 是否需要生成封面?}
+    CoverCheck -->|是| GenerateCover[🎨 AI生成封面图]
+    CoverCheck -->|否| UseCover[🖼️ 使用指定图片]
+    
+    GenerateCover --> CompressImage[📐 图片压缩优化]
+    UseCover --> CompressImage
+    
+    CompressImage --> PlatformLoop[🔄 平台发布循环]
+    
+    PlatformLoop --> ParsePlatforms[📋 解析目标平台]
+    ParsePlatforms --> PlatformIterator{🌐 遍历平台}
+    
+    PlatformIterator -->|微信公众号| WeChatFlow[📱 微信发布流程]
+    PlatformIterator -->|知乎| ZhihuFlow[📖 知乎发布流程]
+    PlatformIterator -->|CSDN| CSDNFlow[💻 CSDN发布流程]
+    PlatformIterator -->|51CTO| CTO51Flow[🔧 51CTO发布流程]
+    PlatformIterator -->|博客园| CNBlogsFlow[📚 博客园发布流程]
+    PlatformIterator -->|图文平台| ImageTextFlow[🖼️ 图文平台发布]
+    
+    WeChatFlow --> UploadAsset[📤 上传素材到微信]
+    UploadAsset --> CreateArticle[📝 创建图文消息]
+    CreateArticle --> PlatformDone[✅ 平台发布完成]
+    
+    ZhihuFlow --> ZhihuUpload[📤 知乎内容发布]
+    ZhihuUpload --> PlatformDone
+    
+    CSDNFlow --> CSDNUpload[📤 CSDN博客发布]
+    CSDNUpload --> PlatformDone
+    
+    CTO51Flow --> CTO51Upload[📤 51CTO发布]
+    CTO51Upload --> PlatformDone
+    
+    CNBlogsFlow --> CNBlogsUpload[📤 博客园发布]
+    CNBlogsUpload --> PlatformDone
+    
+    ImageTextFlow --> OptimizeForPlatform[🎯 平台内容优化]
+    OptimizeForPlatform --> TagsAdjust[🏷️ 调整话题标签数量]
+    TagsAdjust --> PublishImageText[📱 发布图文内容]
+    PublishImageText --> PlatformDone
+    
+    PlatformDone --> MorePlatforms{🔄 还有其他平台?}
+    MorePlatforms -->|是| PlatformIterator
+    MorePlatforms -->|否| AllDone[🎉 全部发布完成]
+    
+    AllDone --> Cleanup[🧹 清理临时文件]
+    Cleanup --> End([✨ 执行结束])
+    
+    EnvError --> End
+    ArgError --> End
 ```
-playwright-automation/
-├── conftest.py                           # pytest 配置文件
-├── test_social_media_automatic_publish.py # 主测试脚本
-├── doubao_ai_image_generator.py         # 豆包AI图片生成模块
-├── wechat_mp_sdk.py                     # 微信公众号API SDK
-├── simple_word_counter.py               # 字数统计工具
-├── find_downloads_directory.py          # 下载目录查找工具
-├── test_doubao_ai_generate_images.py    # 豆包AI图片生成测试脚本
-├── test_dingtalk_editor_debug.py        # 钉钉编辑器调试脚本
-├── test_dingtalk_simple_focus.py        # 钉钉简单聚焦测试脚本
-├── test_dingtalk_iframe_analysis.py     # 钉钉iframe分析脚本
-├── DINGTALK_DEBUG_README.md             # 钉钉调试说明文档
-├── README.md                             # 项目说明文档
-├── requirements.txt                      # 依赖包列表
-├── pyproject.toml                       # 项目配置文件
-├── chromium-browser-data/               # 浏览器用户数据目录
-├── markdown_files/                      # Markdown文件存储目录
-├── generated_images/                    # AI生成的图片存储目录
-└── test-results/                        # 测试结果输出目录
-    ├── videos/                          # 视频录制文件
-    ├── traces/                          # 操作轨迹文件
-    ├── doubao_images/                   # 豆包AI生成的图片
-    └── screenshot_*.png                 # 各平台截图
-```
-
-### 扩展新平台
-
-要添加新的平台支持，需要：
-
-1. 在 `conftest.py` 中添加平台标识
-2. 在测试脚本中添加对应的发布逻辑
-3. 实现平台特定的元素定位和操作
-4. 添加错误处理和状态检查
 
 ### 代码规范
 
-- 使用清晰的注释说明每个步骤
-- 统一的错误处理机制
-- 合理的等待时间和超时设置
-- 详细的日志输出便于调试
+- ✅ 遵循PEP8标准
+- 🏷️ 使用类型提示（Type Hints）
+- 📝 添加详细的文档字符串
+- 🧪 编写单元测试
+- 🔧 使用现代Python特性（3.13+）
 
-## 贡献指南
 
-欢迎提交 Issue 和 Pull Request 来改进这个项目！
+## ⚠️ 注意事项
 
-### 提交规范
+### 使用前必读
 
-1. Fork 项目到自己的仓库
-2. 创建功能分支：`git checkout -b feature/new-platform`
-3. 提交更改：`git commit -m 'feat: add support for new platform'`
-4. 推送分支：`git push origin feature/new-platform`
-5. 创建 Pull Request
+1. **环境配置**：确保已正确设置所有必需的环境变量
+2. **浏览器要求**：Chrome需要以调试模式启动
+3. **网络要求**：需要稳定的网络连接访问各个平台
+4. **API限制**：注意各平台的API调用频率限制
+5. **内容审核**：确保发布内容符合各平台的内容政策
 
-## 许可证
+### 常见问题
 
-本项目采用 MIT 许可证，详见 [LICENSE](LICENSE) 文件。
+#### 故障排除流程图
 
-## 联系方式
-
-- 作者：tornadoami
-- 版本：1.0.0
-- 更新日期：2025年
-
-## 调试功能
-
-### Trace Viewer 使用
-
-```bash
-# 打开trace viewer查看操作轨迹
-uv run playwright show-trace test-results/trace.zip
-
-# 或使用单个trace文件
-uv run playwright show-trace test-results/traces/6a21fd0659eae06a50b06968b7549a32.trace
+```mermaid
+graph TD
+    Problem([遇到问题]) --> CheckError{错误类型}
+    
+    CheckError -->|环境变量错误| EnvIssue[🔐 环境变量问题]
+    CheckError -->|Chrome连接失败| ChromeIssue[🌐 Chrome连接问题]
+    CheckError -->|AI功能失败| AIIssue[🤖 AI功能问题]
+    CheckError -->|发布失败| PublishIssue[📤 发布问题]
+    CheckError -->|其他错误| OtherIssue[❓ 其他问题]
+    
+    EnvIssue --> CheckEnvVars[检查环境变量设置]
+    CheckEnvVars --> SetEnvVars[设置正确的API密钥]
+    SetEnvVars --> RestartProgram[重启程序]
+    
+    ChromeIssue --> CheckChromeRunning[检查Chrome是否运行]
+    CheckChromeRunning --> StartChrome[启动Chrome调试模式]
+    StartChrome --> CheckPort[检查9222端口是否开启]
+    CheckPort --> TestConnection[测试连接localhost:9222]
+    
+    AIIssue --> CheckNetwork[检查网络连接]
+    CheckNetwork --> CheckAIService[检查AI服务状态]
+    CheckAIService --> RetryAI[重试AI操作]
+    
+    PublishIssue --> CheckLogin[检查平台登录状态]
+    CheckLogin --> ReLogin[重新登录平台]
+    ReLogin --> CheckPermissions[检查发布权限]
+    
+    OtherIssue --> CheckLogs[查看详细日志]
+    CheckLogs --> SearchIssues[搜索GitHub Issues]
+    SearchIssues --> CreateIssue[创建新Issue]
+    
+    RestartProgram --> Success[✅ 问题解决]
+    TestConnection --> Success
+    RetryAI --> Success
+    CheckPermissions --> Success
+    CreateIssue --> WaitSupport[等待技术支持]
 ```
 
-### 调试脚本
+#### 问题解答
 
-- `test_dingtalk_editor_debug.py`：钉钉编辑器调试脚本
-- `test_dingtalk_simple_focus.py`：钉钉简单聚焦测试脚本
-- `test_dingtalk_iframe_analysis.py`：钉钉iframe分析脚本
-- `test_doubao_ai_generate_images.py`：豆包AI图片生成测试脚本
+**Q: 为什么需要Chrome调试模式？**
+A: 项目使用现有的Chrome会话来保持登录状态，避免重复登录。我还发现如果要想成功登录Google账户，则需要开启Chrome调试模式，因为chromium登录Google账号时会报错。
 
-## 更新日志
+**Q: 如何处理验证码？**
+A: 建议提前在Chrome中完成各平台的登录，项目会复用登录状态。
 
-### v2.0.0 (2025-09-11)
-- 🆕 新增豆包AI集成功能
-  - 自动生成文章摘要
-  - 自动生成话题标签
-  - 自动生成短标题
-  - 自动生成文章封面图
-- 🆕 新增钉钉文档集成
-  - 自动下载Markdown文件
-  - 自动获取文档URL
-  - 自动上传封面图到钉钉文档
-- 🆕 新增Gemini AI图片生成
-  - 支持Google Gemini AI生成封面图
-  - 自动图片压缩功能
-- 🆕 新增微信公众号素材管理
-  - 自动上传封面图到微信公众号素材库
-  - 集成微信公众号API SDK
-- 🆕 新增智能调试功能
-  - 详细的调试脚本
-  - Trace Viewer支持
-  - 钉钉编辑器调试工具
-- 🔧 优化参数配置
-  - 大部分参数改为可选
-  - 支持AI自动生成
-  - 智能参数验证
-- 🔧 优化错误处理
-  - 更精确的元素定位
-  - 更好的错误恢复机制
-  - 详细的日志输出
+**Q: 支持哪些文件格式？**
+A: 主要支持Markdown格式，图片支持PNG、JPG等常见格式。
 
-### v1.0.0 (2025-08-29)
-- 初始版本发布
-- 支持10个主流社交媒体平台
-- 完整的自动化发布流程
-- 视频录制和截图功能
-- 详细的配置和说明文档
+**Q: AI生成失败怎么办？**
+A: 检查网络连接和AI服务状态，可以手动提供摘要和封面图片作为备选方案。
+
+**Q: 某个平台发布失败？**
+A: 使用 `--platforms` 参数单独测试该平台，检查登录状态和权限设置。
+
+## 📄 许可证
+
+本项目采用MIT许可证。详见 [LICENSE](LICENSE) 文件。
+
+## 🤝 贡献指南
+
+1. 🍴 Fork 本项目
+2. 🌿 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 📝 提交更改 (`git commit -m 'Add amazing feature'`)
+4. 📤 推送到分支 (`git push origin feature/amazing-feature`)
+5. 🔀 创建 Pull Request
+
+## 📞 联系方式
+
+- 📧 **微信公众号**: AI发烧友
+- 💬 **我的微信号**: tornadoami
+- 📝 **文档**: 查看各模块的README文件
 
 ---
 
-**注意**：本脚本仅供学习和研究使用，请遵守各平台的使用条款和内容规范。使用本脚本发布的内容，作者需承担相应的法律责任。
+**🎯 快速提示**: 首次使用建议先使用单个平台测试（如 `--platforms="zhihu"`），熟悉流程后再使用全平台自动发布功能。

@@ -1,12 +1,16 @@
 [project]
 name = "playwright-automation"
 version = "0.1.0"
-description = "Add your description here"
+description = "基于Playwright的社交媒体自动化发布系统，集成AI功能和多平台发布能力"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "alibabacloud-dingtalk>=2.0.0",
+    "alibabacloud-tea-openapi>=0.3.0",
+    "alibabacloud-tea-util>=0.3.0",
     "playwright>=1.54.0",
     "pyperclip>=1.9.0",
     "pytest>=8.4.1",
     "pytest-playwright>=0.7.0",
+    "requests>=2.25.0",
 ]

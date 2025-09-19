@@ -1,0 +1,114 @@
+[project]
+name = "word-counter-sdk"
+version = "1.0.0"
+description = "一个简易的字数统计和文本处理SDK，专门用于中英文混合文本的字符数统计和优化"
+readme = "README.md"
+requires-python = ">=3.6"
+authors = [
+    {name = "tornadoami", email = "your-email@example.com"}
+]
+license = {text = "MIT"}
+keywords = [
+    "word-count",
+    "text-processing", 
+    "chinese-english",
+    "character-count",
+    "text-validation",
+    "ai-summary"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Utilities"
+]
+
+# 无额外依赖
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=21.0",
+    "flake8>=3.8"
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/word-counter-sdk"
+Repository = "https://github.com/your-username/word-counter-sdk"
+Documentation = "https://github.com/your-username/word-counter-sdk#readme"
+"Bug Tracker" = "https://github.com/your-username/word-counter-sdk/issues"
+
+[project.scripts]
+word-counter = "word_counter_sdk.simple_word_counter:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["word_counter_sdk"]
+
+[tool.black]
+line-length = 88
+target-version = ['py36']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = [
+    "tests",
+]
+python_files = [
+    "test_*.py",
+    "*_test.py",
+]
+
+[tool.coverage.run]
+source = ["word_counter_sdk"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
