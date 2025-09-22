@@ -258,20 +258,28 @@ def generate_summary_with_doubao(browser_context, markdown_file):
         
         # 等待AI回复完成
         print("8️⃣ 等待AI回复...")
-        page_doubao.wait_for_timeout(10000)  # 等待10秒让AI生成回复
+        
+        # 使用Playwright的wait_for等待复制按钮出现（最多等待60秒）
+        print("🔄 等待复制按钮出现...")
+        try:
+            # 等待复制按钮出现，最多等待60秒
+            copy_buttons = page_doubao.get_by_test_id("receive_message").get_by_test_id("message_action_copy")
+            copy_buttons.wait_for(state="visible", timeout=120000)  # 等待120秒
+            copy_button_count = copy_buttons.count()
+            print(f"✅ 找到 {copy_button_count} 个复制按钮")
+        except Exception as e:
+            print(f"⚠️  等待复制按钮超时或出错: {e}")
+            print("❌ 未找到复制按钮")
+            raise Exception("未找到复制按钮")
         
         # 点击复制按钮获取AI回复内容
         print("9️⃣ 复制AI回复内容...")
-        # 获取所有复制按钮，选择最后一个（最新的回复）
-        copy_buttons = page_doubao.get_by_test_id("receive_message").get_by_test_id("message_action_copy")
-        copy_button_count = copy_buttons.count()
-        print(f"📊 找到 {copy_button_count} 个复制按钮")
         
         if copy_button_count > 0:
             # 选择最后一个复制按钮（索引为 count-1）
             last_copy_button = copy_buttons.nth(copy_button_count - 1)
-            last_copy_button.click(timeout=60000)
-            page_doubao.wait_for_timeout(1000)
+            last_copy_button.click(timeout=10000)
+            page_doubao.wait_for_timeout(2000)  # 增加等待时间确保复制完成
             print("✅ AI最新回复已复制到剪贴板")
         else:
             print("❌ 未找到复制按钮")
@@ -393,10 +401,9 @@ def generate_newspic_title_with_doubao(browser_context, markdown_file):
         # 点击复制按钮获取AI回复内容
         print("9️⃣ 复制AI回复内容...")
         copy_button = page_doubao.get_by_test_id("receive_message").get_by_test_id("message_action_copy")
-        copy_button.click()
+        copy_button.click(timeout=60000)  # 设置点击操作的超时时间为1分钟
         page_doubao.wait_for_timeout(1000)
         print("✅ AI回复已复制到剪贴板")
-        
         # 使用 pyperclip 从剪贴板读取内容
         try:
             import pyperclip
@@ -1732,7 +1739,7 @@ def test_example(browser_context, request):
             
             # 创建markdown清理器实例，专门移除微信公众号关注行和作者信息行
             cleaner = MarkdownCleaner(
-                keywords=["关注微信公众号", "关于作者和DreamAI"],
+                keywords=["关注微信公众号", "关于作者和DreamAI", "Amq4vjg890AlRbA6Td9ZvlpDJ3kdP0wQ"],
                 mode="contains",
                 case_sensitive=False,
                 backup=False  # 不为51CTO文件创建备份
