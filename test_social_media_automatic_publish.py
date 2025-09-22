@@ -1465,12 +1465,14 @@ def test_example(browser_context, request):
             # 检查是否出现"已保存"文本，如果出现则点击，否则继续执行。如果正文中有图片转存失败，则“已保存”提示不会出现。最终保存为草稿也会失败。
             try:
                 save_success_element = page_wechat.locator("#js_save_success").get_by_text("已保存")
-                if save_success_element.is_visible(timeout=30000):
+                print("🔍 检查是否出现'已保存'提示...超时时间为30秒")
+                is_visible = save_success_element.is_visible(timeout=30000)
+                if is_visible:
                     save_success_element.click()
                     print("✅ 点击了'已保存'提示")
                 else:
                     print("ℹ️  未出现'已保存'提示，继续执行")
-                    page_wechat.pause()
+                    # page_wechat.pause()
             except Exception as e:
                 print(f"ℹ️  处理'已保存'提示时出错，继续执行: {e}")
             print("✅ 文章已保存为草稿")
