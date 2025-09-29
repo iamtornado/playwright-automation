@@ -498,7 +498,7 @@ def generate_tags_with_doubao(browser_context, markdown_file):
         
         # 输入话题标签生成请求的提示词
         print("6️⃣ 输入话题标签生成提示词...")
-        prompt_text = "我想将这篇文章发布到各个主流的社交媒体平台，包括但不限于：微信公众号、CSDN、知乎、51CTO、博客园、小红书、快手、抖音等等，请根据文章的内容，帮我想出10个话题标签。请严格按照以下格式返回：['标签1', '标签2', '标签3', '标签4', '标签5', '标签6', '标签7', '标签8', '标签9', '标签10']，不要换行，不要添加其他文字，标签决不能包含空格，也不能包含任何特殊字符,只返回Python列表格式的字符串。"
+        prompt_text = "我想将这篇文章发布到各个主流的社交媒体平台，包括但不限于：微信公众号、CSDN、知乎、51CTO、博客园、小红书、快手、抖音等等，请根据文章的内容，帮我想出10个话题标签。请严格按照以下格式返回：['标签1', '标签2', '标签3', '标签4', '标签5', '标签6', '标签7', '标签8', '标签9', '标签10']，不要换行，不要添加其他文字，标签决不能包含空格，不能包含横杠，也不能包含任何特殊字符,只返回Python列表格式的字符串。"
         page_doubao.get_by_test_id("chat_input_input").fill(prompt_text)
         page_doubao.wait_for_timeout(1000)
         print("✅ 提示词输入完成")
@@ -562,6 +562,10 @@ def generate_tags_with_doubao(browser_context, markdown_file):
                     # 清理标签：移除可能的引号、方括号等
                     tags_list = [tag.strip().strip('"\'[]') for tag in tags_list if tag.strip()]
                     
+                    # 移除包含横杠的标签
+                    tags_list = [tag for tag in tags_list if '-' not in tag]
+                    print("✅ 已移除包含横杠的标签")
+                    
                     # 限制标签数量（最多10个）
                     if len(tags_list) > 10:
                         tags_list = tags_list[:10]
@@ -573,7 +577,9 @@ def generate_tags_with_doubao(browser_context, markdown_file):
                     print(f"⚠️  标签解析出错: {e}")
                     # 兜底方案：按逗号分隔
                     tags_list = [tag.strip() for tag in tags_text.split(',') if tag.strip()]
-                    print("✅ 使用兜底方案（逗号分隔）解析")
+                    # 移除包含横杠的标签
+                    tags_list = [tag for tag in tags_list if '-' not in tag]
+                    print("✅ 使用兜底方案（逗号分隔）解析，已移除包含横杠的标签")
                 
                 # 保存标签到文件（备份）
                 tags_file = os.path.join("test-results", f"doubao_tags_{os.path.splitext(os.path.basename(markdown_file))[0]}.txt")
@@ -1325,6 +1331,65 @@ def test_example(browser_context, request):
         print(f"📝 最终话题标签: {all_tags}")
         
         
+        # 在发布到各个平台之前，先处理markdown文件，移除微信公众号关注行和作者信息行
+        print("=" * 60)
+        print("🧹 正在处理51CTO专用的markdown文件...")
+        print("=" * 60)
+        
+        # 初始化变量，默认使用原始文件
+        final_51cto_markdown_path = markdown_file
+        
+        try:
+            # 导入markdown清理工具（简化后的导入方式）
+            from markdown_cleaner_sdk import MarkdownCleaner
+            
+            
+            # 创建原始markdown文件的副本，专门用于51CTO
+            original_markdown_path = Path(markdown_file)
+            cto_markdown_path = original_markdown_path.parent / f"51CTO_{original_markdown_path.name}"
+            
+            print(f"📁 原始markdown文件: {original_markdown_path}")
+            print(f"📁 51CTO专用文件: {cto_markdown_path}")
+            
+            # 复制原始文件
+            import shutil
+            shutil.copy2(original_markdown_path, cto_markdown_path)
+            print("✅ 已创建51CTO专用markdown文件副本")
+            
+            # 创建markdown清理器实例，专门移除微信公众号关注行和作者信息行
+            cleaner = MarkdownCleaner(
+                keywords=["关注微信公众号", "关于作者和DreamAI", "Amq4vjg890AlRbA6Td9ZvlpDJ3kdP0wQ"],
+                mode="contains",
+                case_sensitive=False,
+                backup=False  # 不为51CTO文件创建备份
+            )
+            # 清理51CTO专用文件
+            result = cleaner.clean_file(cto_markdown_path)
+            
+            print("✅ 51CTO markdown文件清理完成!")
+            print(f"📊 原行数: {result['original_lines']}")
+            print(f"📊 删除行数: {result['removed_lines']}")
+            print(f"📊 剩余行数: {result['remaining_lines']}")
+            
+            if result['removed_content']:
+                print("🗑️  删除的内容:")
+                for item in result['removed_content']:
+                    print(f"   第{item['line_number']}行: {item['content']}")
+            
+            # 更新markdown_file变量为清理后的51CTO专用文件
+            final_51cto_markdown_path = str(cto_markdown_path)
+            print(f"✅ 已更新markdown_file为51CTO专用文件: {final_51cto_markdown_path}")
+            
+        except ImportError as e:
+            print(f"❌ 无法导入markdown清理工具: {e}")
+            print("⚠️  将使用原始markdown文件，可能包含微信公众号关注信息")
+        except Exception as e:
+            print(f"❌ 处理51CTO markdown文件时出错: {e}")
+            print("⚠️  将使用原始markdown文件，可能包含微信公众号关注信息")
+        
+        print("=" * 60)
+
+
         ## 使用mdnice，将markdown文件转换为微信公众号兼容的格式。
         ## 这是发布到微信公众号的预处理步骤，确保格式兼容性
         if 'wechat' in target_platforms:
@@ -1667,7 +1732,8 @@ def test_example(browser_context, request):
             
             # 导入Markdown文件
             # page_csdn_md_editor.get_by_text("导入 导入").click()
-            page_csdn_md_editor.get_by_text("导入 导入").set_input_files(markdown_file)
+            print(f"📁 正在上传markdown文件（csdn的审核越来越严格，所以使用专门为csdn准备的markdown文件）: {final_51cto_markdown_path}")
+            page_csdn_md_editor.get_by_text("导入 导入").set_input_files(final_51cto_markdown_path)
             page_csdn_md_editor.wait_for_timeout(10000)
             print("等待文档基本加载完成...")
             page_csdn_md_editor.wait_for_load_state("domcontentloaded", timeout=60000)
@@ -1712,63 +1778,6 @@ def test_example(browser_context, request):
             page_csdn_md_editor.get_by_label("Insert publishArticle").get_by_role("button", name="发布文章").click()
             page_csdn_md_editor.get_by_text("发布成功！正在审核中").click()
 
-        # 在发布到51CTO之前，先处理markdown文件
-        print("=" * 60)
-        print("🧹 正在处理51CTO专用的markdown文件...")
-        print("=" * 60)
-        
-        # 初始化变量，默认使用原始文件
-        final_51cto_markdown_path = markdown_file
-        
-        try:
-            # 导入markdown清理工具（简化后的导入方式）
-            from markdown_cleaner_sdk import MarkdownCleaner
-            
-            
-            # 创建原始markdown文件的副本，专门用于51CTO
-            original_markdown_path = Path(markdown_file)
-            cto_markdown_path = original_markdown_path.parent / f"51CTO_{original_markdown_path.name}"
-            
-            print(f"📁 原始markdown文件: {original_markdown_path}")
-            print(f"📁 51CTO专用文件: {cto_markdown_path}")
-            
-            # 复制原始文件
-            import shutil
-            shutil.copy2(original_markdown_path, cto_markdown_path)
-            print("✅ 已创建51CTO专用markdown文件副本")
-            
-            # 创建markdown清理器实例，专门移除微信公众号关注行和作者信息行
-            cleaner = MarkdownCleaner(
-                keywords=["关注微信公众号", "关于作者和DreamAI", "Amq4vjg890AlRbA6Td9ZvlpDJ3kdP0wQ"],
-                mode="contains",
-                case_sensitive=False,
-                backup=False  # 不为51CTO文件创建备份
-            )
-            # 清理51CTO专用文件
-            result = cleaner.clean_file(cto_markdown_path)
-            
-            print("✅ 51CTO markdown文件清理完成!")
-            print(f"📊 原行数: {result['original_lines']}")
-            print(f"📊 删除行数: {result['removed_lines']}")
-            print(f"📊 剩余行数: {result['remaining_lines']}")
-            
-            if result['removed_content']:
-                print("🗑️  删除的内容:")
-                for item in result['removed_content']:
-                    print(f"   第{item['line_number']}行: {item['content']}")
-            
-            # 更新markdown_file变量为清理后的51CTO专用文件
-            final_51cto_markdown_path = str(cto_markdown_path)
-            print(f"✅ 已更新markdown_file为51CTO专用文件: {final_51cto_markdown_path}")
-            
-        except ImportError as e:
-            print(f"❌ 无法导入markdown清理工具: {e}")
-            print("⚠️  将使用原始markdown文件，可能包含微信公众号关注信息")
-        except Exception as e:
-            print(f"❌ 处理51CTO markdown文件时出错: {e}")
-            print("⚠️  将使用原始markdown文件，可能包含微信公众号关注信息")
-        
-        print("=" * 60)
         
         
         
@@ -2096,7 +2105,7 @@ def test_example(browser_context, request):
             print(f"🏷️  抖音话题标签: {douyin_tags}")
             
             page_douyin = browser_context.new_page()
-            page_douyin.goto("https://creator.douyin.com/creator-micro/home?enter_from=dou_web")
+            page_douyin.goto("https://creator.douyin.com/creator-micro/home?enter_from=dou_web", timeout=60000)
             page_douyin.get_by_text("发布图文").click()
             
             # 上传图文
@@ -2167,7 +2176,7 @@ def test_example(browser_context, request):
             file_chooser4.set_files(cover_image)
 
             # 验证是否上传了图片
-            page_kuaishou_newspic.get_by_text(re.compile(r'\d+张图片上传成功')).click()
+            page_kuaishou_newspic.get_by_text(re.compile(r'\d+张图片上传成功')).click(timeout=120000)
             print("✅ 图片上传成功")
             # 快手图文没有标题
             # 设置描述内容
@@ -2179,7 +2188,10 @@ def test_example(browser_context, request):
             page_kuaishou_newspic.locator("#work-description-edit").type(url)
             page_kuaishou_newspic.locator("#work-description-edit").press("Enter")
             print("等待网络空闲")
-            page_kuaishou_newspic.wait_for_load_state("networkidle", timeout=60000)
+            try:
+                page_kuaishou_newspic.wait_for_load_state("networkidle", timeout=60000)
+            except Exception as e:
+                print(f"⚠️ 网络空闲等待超时，继续执行: {e}")
             print("正在添加话题标签...")
             # 添加话题标签，注意：快手最多支持添加4个话题标签
             # 快手添加话题标签很简单，直接输入标签名即可，不是一定要从下拉列表中选择
@@ -2187,7 +2199,10 @@ def test_example(browser_context, request):
                 page_kuaishou_newspic.locator("#work-description-edit").type(f"#{tag} ")
             
             # 等待网络空闲状态
-            page_kuaishou_newspic.wait_for_load_state("networkidle", timeout=60000)
+            try:
+                page_kuaishou_newspic.wait_for_load_state("networkidle", timeout=60000)
+            except Exception as e:
+                print(f"⚠️ 快手图文消息等待网络空闲超时，继续执行: {e}")
             print("✅ 话题标签添加成功")
             # 发布
             print("正在发布快手图文...")

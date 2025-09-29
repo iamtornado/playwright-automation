@@ -216,10 +216,10 @@ Your task:
             print("📋 获取AI回复内容...")
             
             # 点击复制按钮
-            # 等待复制按钮出现，超时时间为1分钟
+            # 等待复制按钮出现，超时时间为2分钟
             try:
                 copy_button = self.page.get_by_test_id("message_action_copy")
-                copy_button.wait_for(timeout=60000)  # 等待1分钟
+                copy_button.wait_for(timeout=120000)  # 等待2分钟
                 copy_button.click()
                 self.page.wait_for_timeout(1000)
                 
