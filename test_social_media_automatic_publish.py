@@ -355,6 +355,84 @@ def generate_newspic_title_with_doubao(browser_context, markdown_file):
         page_doubao.wait_for_load_state("networkidle")
         print("✅ 豆包AI页面加载完成")
         
+        mode = "超能"
+        try:
+            print(f"🔄 正在选择豆包AI的'{mode}'模式...")
+            
+            # 方法1：通过文本内容定位指定模式按钮
+            try:
+                mode_button = page_doubao.get_by_text(mode, exact=True)
+                if mode_button.count() > 0:
+                    mode_button.click()
+                    page_doubao.wait_for_timeout(1000)
+                    print(f"✅ 通过文本定位成功选择'{mode}'模式")
+                    
+            except Exception as e1:
+                print(f"⚠️  方法1失败: {e1}")
+            
+            # 方法2：通过CSS类名和文本内容定位
+            try:
+                mode_button = page_doubao.locator(f"span.button-mE6AaR:has-text('{mode}')")
+                if mode_button.count() > 0:
+                    mode_button.click()
+                    page_doubao.wait_for_timeout(1000)
+                    print(f"✅ 通过CSS类名和文本内容定位成功选择'{mode}'模式")
+                    
+            except Exception as e2:
+                print(f"⚠️  方法2失败: {e2}")
+            
+            # 方法3：通过包含指定文本的span元素定位
+            try:
+                mode_button = page_doubao.locator(f"span:has-text('{mode}')")
+                if mode_button.count() > 0:
+                    # 过滤出具有button-mE6AaR类的元素
+                    for i in range(mode_button.count()):
+                        element = mode_button.nth(i)
+                        if "button-mE6AaR" in element.get_attribute("class", ""):
+                            element.click()
+                            page_doubao.wait_for_timeout(1000)
+                            print(f"✅ 通过span元素定位成功选择'{mode}'模式")
+                            
+            except Exception as e3:
+                print(f"⚠️  方法3失败: {e3}")
+            
+            # 方法4：通过tabindex属性定位（查找所有可点击的按钮）
+            try:
+                all_buttons = page_doubao.locator("span[tabindex='0']")
+                if all_buttons.count() > 0:
+                    for i in range(all_buttons.count()):
+                        button = all_buttons.nth(i)
+                        button_text = button.text_content()
+                        if button_text == mode:
+                            button.click()
+                            page_doubao.wait_for_timeout(1000)
+                            print(f"✅ 通过tabindex属性定位成功选择'{mode}'模式")
+                            
+            except Exception as e4:
+                print(f"⚠️  方法4失败: {e4}")
+            
+            # 方法5：兜底方案 - 查找所有包含指定文本的元素
+            try:
+                all_mode_elements = page_doubao.locator(f"*:has-text('{mode}')")
+                if all_mode_elements.count() > 0:
+                    # 遍历所有包含指定文本的元素，找到可点击的按钮
+                    for i in range(all_mode_elements.count()):
+                        element = all_mode_elements.nth(i)
+                        element_class = element.get_attribute("class", "")
+                        if "button-mE6AaR" in element_class or "button" in element_class:
+                            element.click()
+                            page_doubao.wait_for_timeout(1000)
+                            print(f"✅ 通过兜底方案成功选择'{mode}'模式")
+                           
+            except Exception as e5:
+                print(f"⚠️  方法5失败: {e5}")
+            
+            print(f"❌ 所有方法都无法找到'{mode}'模式按钮")
+            return False
+            
+        except Exception as e:
+            print(f"❌ 选择'{mode}'模式时出错: {e}")
+
         # 点击文件上传按钮
         print("2️⃣ 点击文件上传按钮...")
         page_doubao.get_by_test_id("upload_file_button").click()
@@ -2070,9 +2148,10 @@ def test_example(browser_context, request):
             page_xiaohongshu.get_by_role("textbox").nth(1).click()
             page_xiaohongshu.get_by_role("textbox").nth(1).type(summary)
             page_xiaohongshu.get_by_role("textbox").nth(1).press("Enter")
-            page_xiaohongshu.get_by_role("textbox").nth(1).type("详情请查阅此文章：")
-            page_xiaohongshu.get_by_role("textbox").nth(1).type(url)
-            page_xiaohongshu.get_by_role("textbox").nth(1).press("Enter")
+            # 若加入链接，则会被核定违规
+            # page_xiaohongshu.get_by_role("textbox").nth(1).type("详情请查阅此文章：")
+            # page_xiaohongshu.get_by_role("textbox").nth(1).type(url)
+            # page_xiaohongshu.get_by_role("textbox").nth(1).press("Enter")
             
             # 模拟人工操作添加话题标签，小红书笔记最多支持添加10个话题标签
             for tag in xiaohongshu_tags:
@@ -2094,7 +2173,7 @@ def test_example(browser_context, request):
             # 注意：实际发布需要手动点击发布按钮
             page_xiaohongshu.get_by_role("button", name="发布").click()
             # 验证是否发布成功
-            page_xiaohongshu.get_by_text('发布成功').click()
+            page_xiaohongshu.get_by_text('发布成功').click(timeout=60000)
 
         ## 抖音，发布图文（douyin_newspic）。
         ## 支持图片上传，设置标题、描述、合集等
