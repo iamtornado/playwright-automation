@@ -13,6 +13,19 @@ from word_counter_sdk import validate_and_clean_text
 # 导入钉钉SDK
 from dingtalk_sdk import create_sdk
 
+# 尝试加载.env文件中的环境变量
+try:
+    from dotenv import load_dotenv
+    # 加载.env文件
+    load_dotenv()
+    print("✅ 已加载.env文件中的环境变量")
+except ImportError:
+    print("⚠️  未安装python-dotenv，将使用系统环境变量")
+    print("如需使用.env文件，请运行: pip install python-dotenv")
+except Exception as e:
+    print(f"⚠️  加载.env文件时出错: {e}")
+    print("将使用系统环境变量")
+
 # 定义各平台的话题标签数量限制
 PLATFORM_TAG_LIMITS = {
     'zhihu': 3,           # 知乎最多3个话题标签
@@ -34,7 +47,13 @@ dingtalk_user_id = os.getenv("DINGTALK_USER_ID")
 
 if not app_id or not app_secret:
     print("❌ 请设置环境变量 WECHAT_APP_ID 和 WECHAT_APP_SECRET")
-    print("例如：")
+    print("")
+    print("推荐方式：使用 .env 文件")
+    print("1. 复制 .env.example 文件为 .env")
+    print("   cp .env.example .env")
+    print("2. 编辑 .env 文件，填入你的实际配置")
+    print("")
+    print("或者设置系统环境变量：")
     print("Linux/macOS:")
     print("export WECHAT_APP_ID=your_app_id")
     print("export WECHAT_APP_SECRET=your_app_secret")
@@ -50,7 +69,13 @@ if not app_id or not app_secret:
 
 if not dingtalk_app_key or not dingtalk_app_secret or not dingtalk_user_id:
     print("❌ 请设置环境变量 DINGTALK_APP_KEY, DINGTALK_APP_SECRET 和 DINGTALK_USER_ID")
-    print("例如：")
+    print("")
+    print("推荐方式：使用 .env 文件")
+    print("1. 复制 .env.example 文件为 .env")
+    print("   cp .env.example .env")
+    print("2. 编辑 .env 文件，填入你的实际配置")
+    print("")
+    print("或者设置系统环境变量：")
     print("Linux/macOS:")
     print("export DINGTALK_APP_KEY=your_app_key")
     print("export DINGTALK_APP_SECRET=your_app_secret")
@@ -1666,85 +1691,145 @@ def test_example(browser_context, request):
                             raise Exception("未找到正确的'写文章'按钮")
             page_zhihu_editor = page_zhihu_info.value
             
-            # 点击"文档"按钮打开导入模态框
-            print("点击'文档'按钮以弹出导入菜单")
-            # 使用更精确的CSS选择器定位"文档"按钮
+            # 点击"导入"按钮打开导入模态框（知乎编辑器已改版）
+            print("点击'导入'按钮以弹出导入菜单")
+            # 使用更精确的CSS选择器定位"导入"按钮
             try:
-                # 方法1：通过包含"文档"文本的span元素定位
-                page_zhihu_editor.locator("span.css-8atqhb:has-text('文档')").click()
-                print("✅ 通过span.css-8atqhb定位成功")
+                # 方法1：通过包含"导入"文本的span元素定位
+                page_zhihu_editor.locator("span:has-text('导入')").click()
+                print("✅ 通过span:has-text('导入')定位成功")
             except Exception as e1:
                 print(f"⚠️ 方法1失败: {e1}")
                 try:
                     # 方法2：通过按钮的aria-label属性定位
-                    page_zhihu_editor.locator("button[aria-label='文档']").click()
+                    page_zhihu_editor.locator("button[aria-label='导入']").click()
                     print("✅ 通过aria-label定位成功")
                 except Exception as e2:
                     print(f"⚠️ 方法2失败: {e2}")
                     try:
-                        # 方法3：通过包含特定class的按钮定位
-                        page_zhihu_editor.locator("button.ToolbarButton:has-text('文档')").click()
+                        # 方法3：通过包含特定class的按钮定位（可能class有变化，保留备用）
+                        page_zhihu_editor.locator("button.ToolbarButton:has-text('导入')").click()
                         print("✅ 通过ToolbarButton class定位成功")
                     except Exception as e3:
                         print(f"⚠️ 方法3失败: {e3}")
                         # 方法4：兜底方案，使用原来的方式
-                        page_zhihu_editor.get_by_role("button", name="文档").click()
+                        page_zhihu_editor.get_by_role("button", name="导入").click()
                         print("✅ 使用兜底方案定位成功")
             
             # 等待弹窗出现，使用更稳定的定位方式
             print("等待弹窗出现...")
             try:
                 # 方法1：等待弹窗容器出现
-                page_zhihu_editor.wait_for_selector("[role='tooltip'], .Popover-content, [id*='Popover']", timeout=5000)
+                page_zhihu_editor.wait_for_selector(".Popover-content", timeout=5000)
                 print("✅ 弹窗容器已出现")
                 
-                # 方法2：尝试多种定位方式
-                doc_button_clicked = False
-                
-                # 尝试通过弹窗内的文档按钮定位
+                # 方法2：尝试多种定位方式点击"导入文档"按钮
+                import_doc_button_clicked = False
+
+                # 尝试通过aria-label属性定位（最可靠的方法）
                 try:
-                    # 使用更通用的选择器
-                    popover_content = page_zhihu_editor.locator("[role='tooltip'], .Popover-content, [id*='Popover']").first
-                    popover_content.get_by_role("button", name="文档").click()
-                    print("✅ 通过弹窗容器找到并点击了'文档'按钮")
-                    doc_button_clicked = True
+                    import_doc_button = page_zhihu_editor.locator("button[aria-label='导入文档']")
+                    if import_doc_button.count() > 0:
+                        import_doc_button.first.click()
+                        print("✅ 通过aria-label='导入文档'定位成功")
+                        import_doc_button_clicked = True
+                    else:
+                        raise Exception("未找到aria-label='导入文档'的按钮")
                 except Exception as e1:
                     print(f"⚠️  方法1失败: {e1}")
-                    
-                    # 尝试直接通过文本定位
+
+                    # 尝试通过弹窗容器内的按钮定位
                     try:
-                        page_zhihu_editor.get_by_text("文档").nth(1).click()  # 第二个文档按钮
-                        print("✅ 通过文本定位找到并点击了'文档'按钮")
-                        doc_button_clicked = True
+                        popover_content = page_zhihu_editor.locator(".Popover-content").first
+                        import_doc_button = popover_content.locator("button[aria-label='导入文档']")
+                        if import_doc_button.count() > 0:
+                            import_doc_button.first.click()
+                            print("✅ 通过弹窗容器内的aria-label定位成功")
+                            import_doc_button_clicked = True
+                        else:
+                            raise Exception("弹窗容器内未找到aria-label='导入文档'的按钮")
                     except Exception as e2:
                         print(f"⚠️  方法2失败: {e2}")
-                        
-                        # 尝试通过CSS选择器
+
+                        # 尝试通过按钮文本和MD/Doc标签组合定位
                         try:
-                            page_zhihu_editor.locator("button:has-text('文档')").nth(1).click()
-                            print("✅ 通过CSS选择器找到并点击了'文档'按钮")
-                            doc_button_clicked = True
+                            # 查找包含"导入文档"和"MD/Doc"的按钮
+                            import_doc_button = page_zhihu_editor.locator("button:has-text('导入文档'):has-text('MD/Doc')")
+                            if import_doc_button.count() > 0:
+                                import_doc_button.first.click()
+                                print("✅ 通过文本组合'导入文档'和'MD/Doc'定位成功")
+                                import_doc_button_clicked = True
+                            else:
+                                raise Exception("未找到包含'导入文档'和'MD/Doc'的按钮")
                         except Exception as e3:
                             print(f"⚠️  方法3失败: {e3}")
-                
-                if not doc_button_clicked:
-                    raise Exception("所有方法都无法找到弹窗中的'文档'按钮")
-                    
+
+                            # 尝试通过CSS类名和文本组合定位
+                            try:
+                                import_doc_button = page_zhihu_editor.locator("button.Button:has-text('导入文档')")
+                                if import_doc_button.count() > 0:
+                                    import_doc_button.first.click()
+                                    print("✅ 通过CSS类名Button和文本'导入文档'定位成功")
+                                    import_doc_button_clicked = True
+                                else:
+                                    raise Exception("未找到Button类的'导入文档'按钮")
+                            except Exception as e4:
+                                print(f"⚠️  方法4失败: {e4}")
+
+                                # 兜底方案：直接通过文本定位
+                                try:
+                                    import_doc_button = page_zhihu_editor.get_by_text("导入文档")
+                                    if import_doc_button.count() > 0:
+                                        import_doc_button.first.click()
+                                        print("✅ 通过兜底方案（直接文本定位）成功")
+                                        import_doc_button_clicked = True
+                                    else:
+                                        raise Exception("未找到任何'导入文档'按钮")
+                                except Exception as e5:
+                                    print(f"⚠️  兜底方案失败: {e5}")
+
+                if not import_doc_button_clicked:
+                    raise Exception("所有方法都无法找到并点击'导入文档'按钮")
+            
             except Exception as e:
-                print(f"❌ 无法找到弹窗或文档按钮: {e}")
-                # 如果弹窗定位失败，尝试直接点击第二个文档按钮
+                print(f"❌ 无法找到弹窗或'导入文档'按钮: {e}")
+                # 如果所有方法都失败，尝试直接通过文本定位
                 try:
-                    page_zhihu_editor.get_by_text("文档").nth(1).click()
-                    print("✅ 直接点击第二个'文档'按钮成功")
+                    import_doc_button = page_zhihu_editor.get_by_text("导入文档")
+                    if import_doc_button.count() > 0:
+                        import_doc_button.first.click()
+                        print("✅ 最终兜底方案成功：直接点击'导入文档'按钮")
+                    else:
+                        raise Exception("最终兜底方案也失败：未找到'导入文档'按钮")
                 except Exception as e2:
-                    print(f"❌ 备用方法也失败: {e2}")
+                    print(f"❌ 最终兜底方案也失败: {e2}")
                     raise e2
             
-            # 等待文档导入模态框出现
-            page_zhihu_editor.wait_for_selector(".Editable-docModal", state="visible", timeout=10000)
+            # 等待文档导入模态框出现（新的模态框结构）
+            print("等待文档导入模态框出现...")
+            page_zhihu_editor.wait_for_selector(".Modal-wrapper", state="visible", timeout=10000)
+            print("✅ 模态框已出现")
             
-            # 直接选择文件输入框并上传文件
-            page_zhihu_editor.locator(".Editable-docModal input[type='file']").set_input_files(markdown_file)
+            # 通过拖拽区域触发文件选择器上传文件
+            print("正在上传Markdown文件...")
+            with page_zhihu_editor.expect_file_chooser() as file_chooser_info:
+                # 点击拖拽区域触发文件选择器
+                drag_area = page_zhihu_editor.locator("div[role='button']").filter(has_text="点击选择本地文档或拖动文件到窗口上传")
+                if drag_area.count() > 0:
+                    drag_area.first.click()
+                    print("✅ 点击拖拽区域触发文件选择器")
+                else:
+                    # 备用方案：点击整个上传区域
+                    upload_area = page_zhihu_editor.locator(".css-94ghot")
+                    if upload_area.count() > 0:
+                        upload_area.first.click()
+                        print("✅ 点击上传区域触发文件选择器")
+                    else:
+                        raise Exception("未找到上传区域")
+            
+            file_chooser = file_chooser_info.value
+            file_chooser.set_files(markdown_file)
+            print("✅ 文件上传成功")
             
             # 等待文件上传完成和内容解析
             page_zhihu_editor.wait_for_timeout(10000)
@@ -1914,9 +1999,9 @@ def test_example(browser_context, request):
                 # 如果没有找到按钮或出现其他错误，继续执行
                 print(f"ℹ️  未发现继续发布按钮或处理时出错: {e}")
                 pass
-            # 设置文章分类
-            page_51cto.get_by_text("文章分类").click()
-            page_51cto.get_by_text("人工智能").click()
+                # 设置文章分类
+                page_51cto.get_by_text("文章分类").click()
+                page_51cto.get_by_text("人工智能", exact=True).click()
             page_51cto.get_by_text("NLP").click()
             
             # 设置个人分类
@@ -2482,6 +2567,7 @@ if __name__ == "__main__":
     print("- Playwright 已安装并配置")
     print("- 浏览器（Chrome/Chromium）已安装")
     print("- 各平台账号已登录（首次运行需要手动登录）")
+    print("- 如需使用.env文件，需要安装: pip install python-dotenv")
     print()
     print("注意事项：")
     print("1. 首次运行前需要手动登录各平台账号")
@@ -2556,3 +2642,4 @@ if __name__ == "__main__":
     print("环境要求：")
     print("- 如果使用豆包AI功能，需要安装: pip install pyperclip")
     print("- 如果使用豆包AI功能，需要先登录豆包AI账号")
+    print("- 如需使用.env文件，需要安装: pip install python-dotenv")

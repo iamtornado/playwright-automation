@@ -177,20 +177,35 @@ uv run playwright install chromium
 
 4. **配置环境变量**
 
-创建 `.env` 文件或设置系统环境变量：
+项目提供了 `.env.example` 文件作为环境变量配置的模板。你可以：
 
+**方式一：复制示例文件（推荐）**
+```bash
+# 复制 .env.example 文件为 .env
+cp .env.example .env
+
+# 然后编辑 .env 文件，填入你的实际配置
+```
+
+**方式二：设置系统环境变量**
 ```bash
 # 钉钉API配置
 # 可以参考此文：https://alidocs.dingtalk.com/i/nodes/pGBa2Lm8aG3qEO3ws0zZAeLLVgN7R35y
-DINGTALK_APP_KEY="your_app_key"
-DINGTALK_APP_SECRET="your_app_secret" 
-DINGTALK_USER_ID="your_user_id"
+export DINGTALK_APP_KEY="your_app_key"
+export DINGTALK_APP_SECRET="your_app_secret" 
+export DINGTALK_USER_ID="your_user_id"
 
 # 微信公众号API配置
 # 可以参考此文：https://docs.dingtalk.com/i/nodes/GZLxjv9VGqAl6KAPs7v3m4gO86EDybno
-WECHAT_APP_ID="your_app_id"
-WECHAT_APP_SECRET="your_app_secret"
+export WECHAT_APP_ID="your_app_id"
+export WECHAT_APP_SECRET="your_app_secret"
 ```
+
+**注意事项：**
+- 钉钉和微信公众号的API密钥需要从各自开放平台获取
+- 环境变量必须在运行脚本前设置好
+- `.env` 文件已被添加到 `.gitignore`，不会提交到版本控制
+- 使用 `.env` 文件需要安装 `python-dotenv`：`pip install python-dotenv`
 
 5. **启动Chrome调试模式（仅在需要连接到电脑中已经安装的Chrome浏览器时需要，playwright默认使用的是内置的chromium）**
 ```bash
